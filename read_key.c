@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
-#include "./Rozum-Servo-Drives-API/c/include/api.h"
 
 #define UP    259
 #define DOWN  258
@@ -94,81 +93,11 @@ void modify_value()
 }
 
 
-
-
-
-
 void update_screen()
 {
     print_mark(" ");
     refresh();
 }
-
-void show_position(float pos,rr_servo_t *servo)
-{
-    int input;
-    int i = 0;
-    bool press_enter = false;
-    mvprintw(0,0,"Posicion del motor\n");    /* Imprime un mesaje              */
-    //mvprintw(2,2,"%f",pos);
-    while(!press_enter)
-    {
-
-       rr_read_parameter(servo,APP_PARAM_POSITION,&pos);
-       // mvprintw(2,5,"%f",pos);
-        
-        input = getch();                       /* Guarda la tecla presionada     */
-        if(input == UP)
-        {
-            //pos -= 2.5;
-            //rr_set_position(servo,pos);
-            if(vel > -6)
-            {
-                vel -=0.4;
-            }
-            i = 0;
-        }
-        else if(input == DOWN)
-        {
-            //pos+=2.5;
-            //rr_set_position(servo,pos);
-            if(vel < 6)
-            {
-                vel+=0.4;
-            }
-            i = 0;
-            
-        }
-        if(i > 5)
-        {
-            i = 0;
-            if(vel > 0)
-            {
-                vel-= 0.1;
-            }
-            else if(vel < 0)
-            {
-                vel+=0.1;
-            }
-            else if(vel < 0.1 && vel > -0.1)
-            {
-                vel = 0;
-            }
-            print_mark(" ");
-        }
-        i++;
-        rr_set_velocity(servo,vel);
-        mvprintw(4,5,"%f",vel);
-        if(input == 10)
-        {
-            clear();
-            printw("Pulse cualquier tecla para salir\n");
-            press_enter = true;
-        }
-        refresh();
-    }
-}
-
 
 void move_keys(int in)
 {
@@ -231,16 +160,16 @@ void print_keys()
 {
     int ch;
     bool press_enter = false;
-    printw("Pulse cualquier tecla\n");    /* Imprime un mesaje              */
+    mvprintw(0,0,"Pulse cualquier tecla\n");    /* Imprime un mesaje              */
     while(!press_enter)
     {
         ch = getch();                       /* Guarda la tecla presionada     */
         attron(A_BOLD);
-        printw("%c",ch);
+        mvprintw(2,2,"%d",ch);
         attroff(A_BOLD);
         if(ch == 10)
         {
-            printw("\n");
+            clear();
             printw("Pulse cualquier tecla para salir\n");
             press_enter = true;
         }
@@ -255,32 +184,17 @@ void init_interface()
     //raw();                              /* Desactiva buffer de linea      */
     keypad(stdscr, TRUE);               /* Obtener la tecla presionada    */
     noecho();                           /* Elimina los mensajes repetidos */
-    print_mark("#");
-    nodelay(stdscr, TRUE);
+    print_mark(" ");
+    //nodelay(stdscr, TRUE);
 }
 
 
 
 int main()
 {
-    rr_can_interface_t *iface = rr_init_interface("/dev/rozum_api");
-    rr_servo_t *servo = rr_init_servo(iface,125);
-    if(servo == NULL)
-    {
-        printf("No se ha reconocido el motor\n");
-    }
-    else
-    {
-        printf("Se ha reconocido el motor\n");
-    }
-    	//float value;
-	//! [Read parameter variable]
-    rr_servo_set_state_operational(servo);
-    //rr_clear_points_all(servo);
-
+    
     init_interface();
-    //modify_value();
-    show_position(pos,servo);
+    print_keys();
     getch();                            /* Esperar entrada de usuario     */
     endwin();                           /* Terminar el modo curses        */
 
