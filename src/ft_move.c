@@ -26,11 +26,11 @@ rr_servo_t *motor_select(RoboArm arm,char *inf)
             }
             else
             {
-                printf("Formato invalido");
-
+                fprintf(stderr, "Error: Accion de motor 1 incorrecta.\n");
+                exit(1);
             }
         }
-        if(inf[1] == '2')
+        else if(inf[1] == '2')
         {
             if(inf[2] == 'u')
             {
@@ -44,10 +44,11 @@ rr_servo_t *motor_select(RoboArm arm,char *inf)
             }
             else
             {
-                printf("Formato invalido");
+                fprintf(stderr, "Error: Accion de motor 2 incorrecta.\n");
+                exit(1);
             }
         }
-        if(inf[1] == '3')
+        else if(inf[1] == '3')
         {
             if(inf[2] == 'u')
             {
@@ -61,18 +62,20 @@ rr_servo_t *motor_select(RoboArm arm,char *inf)
             }
             else
             {
-                printf("Formato invalido");
+                fprintf(stderr, "Error: Accion de motor 3 incorrecta.\n");
+                exit(1);
             }
         }
         else
         {
-            printf("Formato invalido");    
+            fprintf(stderr, "Error: Numero de motor  incorrecto.\n");
+            exit(1); 
         }
     }
     else
     {
-        motor = NULL;
-        printf("Formato invalido");
+        fprintf(stderr, "Error: Formato de motor incorrecto.\n");
+        exit(1);
     }
     return motor;
 }
@@ -84,14 +87,11 @@ RoboArm motors_select(RoboArm arm, char *inf)
     
     if(inf[0] == 'm' && inf[3] == 'm' && inf[6] == 'm')
     {
-        printf("paso1\n");
         if(inf[1] == '1' && inf[4] == '2' && inf[7] == '3')
         {
-            printf("paso2\n");
             //Motor 1
             if(inf[2] == 'l')
             {
-                printf("paso3\n");
                 dir1 = "left";
                 robot.motor_1 = arm.motor_1;
             }
@@ -105,11 +105,15 @@ RoboArm motors_select(RoboArm arm, char *inf)
                 dir1 = "off_1";
                 robot.motor_1 = arm.motor_1;
             }
+            else
+            {
+                fprintf(stderr, "Error: Accion de motor 1 incorrecta.\n");
+                exit(1);
+            }
             
             //Motor 2
             if(inf[5] == 'u')
             {
-                printf("paso4\n");
                 dir2 = "up_2";
                 robot.motor_2 = arm.motor_2;
             }
@@ -123,11 +127,15 @@ RoboArm motors_select(RoboArm arm, char *inf)
                 dir2 = "off_2";
                 robot.motor_2 = arm.motor_2;
             }
+            else
+            {
+                fprintf(stderr, "Error: Accion de motor 2 incorrecta.\n");
+                exit(1);
+            }
 
             //Motor 3
             if(inf[8] == 'u')
             {
-                printf("paso5\n");
                 dir3 = "up_3";
                 robot.motor_3 = arm.motor_3;
             }
@@ -141,15 +149,27 @@ RoboArm motors_select(RoboArm arm, char *inf)
                 dir3 = "off_3";
                 robot.motor_3 = arm.motor_3;
             }
+            else
+            {
+                fprintf(stderr, "Error: Accion de motor 3 incorrecta.\n");
+                exit(1);
+            }
         }
-    }
-    if(robot.motor_1 == NULL || robot.motor_2 == NULL || robot.motor_3 == NULL)
-    {
-        printf("No se inicializo\n");
+        else
+        {
+            fprintf(stderr, "Error: Numero de motor incorrecto.\n");
+            exit(1);
+        }
     }
     else
     {
-        printf("Todo bien\n");
+        fprintf(stderr, "Error: Formato de motor incorrecto.\n");
+        exit(1);
+    }
+    if(robot.motor_1 == NULL || robot.motor_2 == NULL || robot.motor_3 == NULL)
+    {
+        fprintf(stderr, "Error: Motores no inicializados.\n");
+        exit(1);
     }
     return robot;
 }
@@ -176,7 +196,7 @@ void auto_move_motor(RoboArm arm, long time, char *inf)
     TimerMS subida;
     TimerMS bajada;
     rr_servo_t *motor;
-    long t = time/2.0;
+    long t = time;
     float p;
     float v;
     bool terminado = false;
@@ -184,7 +204,8 @@ void auto_move_motor(RoboArm arm, long time, char *inf)
     motor = motor_select(arm,inf);
     if(motor == NULL)
     {
-        terminado = true;
+        fprintf(stderr, "Error: Motor no inicializado.\n");
+        exit(1);   
     }
     else
     {
@@ -194,7 +215,6 @@ void auto_move_motor(RoboArm arm, long time, char *inf)
     {
         rr_param_cache_update(motor);
         rr_read_cached_parameter(motor,APP_PARAM_POSITION,&p);
-        printf("%f\n",p);
         if(!timer_ms_expirado(&subida))
         {
             if(ft_strcmp(dir,"up_3",4) == 0)
@@ -304,7 +324,7 @@ void auto_move_motor(RoboArm arm, long time, char *inf)
         {
             if(!flag)
             {
-                iniciar_timer_ms(&bajada, t);
+                iniciar_timer_ms(&bajada, time*0.1);
                 flag = true;
             }
             if(!timer_ms_expirado(&bajada))
@@ -314,6 +334,7 @@ void auto_move_motor(RoboArm arm, long time, char *inf)
                     if(v < 0)
                     {
                         v+=0.5;
+                        printf("estoy bajando o estoy bajando\n");
                     }
                 }
                 else if((ft_strcmp(dir,"down_3",6) == 0) || (ft_strcmp(dir,"up_2",4) == 0) || (ft_strcmp(dir,"left",4) == 0))
@@ -323,12 +344,14 @@ void auto_move_motor(RoboArm arm, long time, char *inf)
                         v-=0.5;
                     }
                 }
-                if (v == 0)
-                {
-                    terminado = true;
-                }
+            }
+            else
+            {
+                terminado = true;
+                printf("DING DONG DING DONG\n");
             }
         }
+        usleep(20000);
         rr_set_velocity(motor,v);
     }
 }
@@ -343,9 +366,9 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
     TimerMS subida_3;
     TimerMS bajada_3;
     RoboArm robot;
-    long t1 = times.motor_1/2.0;
-    long t2 = times.motor_2/2.0;
-    long t3 = times.motor_3/2.0;
+    long t1 = times.motor_1;
+    long t2 = times.motor_2;
+    long t3 = times.motor_3;
     bool terminado_total = false;
     bool terminado1 = false;
     bool terminado2 = false;
@@ -359,18 +382,16 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
 
 
     robot = motors_select(arm,inf);
-    printf("hola\n");
     if(robot.motor_1 == NULL || robot.motor_2 == NULL || robot.motor_3 == NULL)
     {
-        terminado_total = true;
-        printf("No se inicializo\n");
+        fprintf(stderr, "Error: Motores no inicializados.\n");
+        exit(1);
     }
     else
     {
-        iniciar_timer_ms(&subida_1, t1);
-        iniciar_timer_ms(&subida_2, t2);
-        iniciar_timer_ms(&subida_3, t3);
-        printf("Todo bien\n");
+        iniciar_timer_ms(&subida_1, t1*0.9);
+        iniciar_timer_ms(&subida_2, t2*0.9);
+        iniciar_timer_ms(&subida_3, t3*0.9);
     }
     while(!terminado_total)
     {
@@ -383,7 +404,6 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
         
         if(!timer_ms_expirado(&subida_1) && (ft_strcmp(dir1,"off_1",5) != 0))
         {
-            //printf("%f\n",var.p.motor_1);
             if(ft_strcmp(dir1,"left",4) == 0)
             {
                 if(var.p.motor_1 < 72)
@@ -424,7 +444,7 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
         {
             if(!flag1)
             {
-                iniciar_timer_ms(&bajada_1, t1);
+                iniciar_timer_ms(&bajada_1, t1*0.1);
                 flag1 = true;
             }
             if(!timer_ms_expirado(&bajada_1))
@@ -443,16 +463,15 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
                         var.v.motor_1-=0.5;
                     }
                 }
-                if (var.v.motor_1 == 0)
-                {
-                    terminado1 = true;
-                }
+            }
+            else
+            {
+                terminado1 = true;
             }
         }
         
         if(!timer_ms_expirado(&subida_2) && (ft_strcmp(dir2,"off_2",5) != 0))
         {
-            printf("%s\n",dir2);
             if(ft_strcmp(dir2,"up_2",4) == 0)
             {
                 if(var.p.motor_2 < -27)
@@ -492,7 +511,7 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
         {
             if(!flag2)
             {
-                iniciar_timer_ms(&bajada_2, t2);
+                iniciar_timer_ms(&bajada_2, t2*0.1);
                 flag2 = true;
             }
             if(!timer_ms_expirado(&bajada_2))
@@ -511,10 +530,10 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
                         var.v.motor_2-=0.5;
                     }
                 }
-                if (var.v.motor_2 == 0)
-                {
-                    terminado2 = true;
-                }
+            }
+            else
+            {
+                terminado2 = true;
             }
         }
 
@@ -559,7 +578,7 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
         {
             if(!flag3)
             {
-                iniciar_timer_ms(&bajada_3, t3);
+                iniciar_timer_ms(&bajada_3, t3*0.1);
                 flag3 = true;
             }
             if(!timer_ms_expirado(&bajada_3))
@@ -578,16 +597,17 @@ void auto_move_motors(RoboArm arm,Var_motors var, Tmotors times, char *inf)
                         var.v.motor_3-=0.5;
                     }
                 }
-                if (var.v.motor_3 == 0)
-                {
-                    terminado3 = true;
-                }
+            }
+            else
+            {
+                terminado3 = true;
             }
         }
         if(terminado1 == true && terminado2 == true && terminado3 == true)
         {
             terminado_total = true;
         }
+        usleep(20000);
         rr_set_velocity(robot.motor_1,var.v.motor_1);
         rr_set_velocity(robot.motor_2,var.v.motor_2);
         rr_set_velocity(robot.motor_3,var.v.motor_3);

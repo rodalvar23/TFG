@@ -13,5 +13,6 @@ int main()
     init_motors(&arm,&var_m);
     auto_move_motors(arm,var_m,times,"m1lm2um3u");
     auto_move_motors(arm,var_m,times,"m1rm2dm3d");
+    //manual_mode(arm,var_m);
     return 0;
 }
