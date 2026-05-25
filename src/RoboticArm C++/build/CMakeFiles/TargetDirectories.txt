@@ -1,0 +1,4 @@
+/home/rodrigo/Documentos/TFG/Codigo/RoboticArm C++/build/CMakeFiles/mifunciones.dir
+/home/rodrigo/Documentos/TFG/Codigo/RoboticArm C++/build/CMakeFiles/mi_programa.dir
+/home/rodrigo/Documentos/TFG/Codigo/RoboticArm C++/build/CMakeFiles/edit_cache.dir
+/home/rodrigo/Documentos/TFG/Codigo/RoboticArm C++/build/CMakeFiles/rebuild_cache.dir

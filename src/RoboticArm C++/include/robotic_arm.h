@@ -1,0 +1,193 @@
+#ifndef ROBOTIC_ARM_H
+
+#define ROBOTIC_ARM_H
+
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <stdbool.h>
+#include "./Rozum-Servo-Drives-API/c/include/api.h"
+
+
+//dynamixel motors ids
+#define ID_1 1
+#define ID_2 2
+#define ID_3 3
+#define ID_5 5
+#define ID_12 12
+
+//Constants
+#define ON 1
+#define OFF 0
+#define OPERATING_MODE 11
+#define TORQUE_ADDRESS 64
+#define VELOCITY_MODE 1
+#define VELOCITY_LIMIT 48
+#define POSITION_LIMIT 4
+#define POSITION_MODE 3
+#define PRESENT_CURRENT_ADDRESS 126
+#define PRESENT_VELOCITY_ADDRESS 128
+#define PRESENT_POSITION_ADDRESS 132
+#define PRESENT_TEMPERATURE_ADDRESS 146
+#define GOAL_VELOCITY_ADDRESS 104
+#define GOAL_POSITION_ADDRESS 116
+
+
+
+typedef struct {
+    struct timespec inicio;
+    long ms_objetivo;
+} TimerMS;
+
+typedef struct
+{
+    rr_servo_t *motor_1;
+    rr_servo_t *motor_2;
+    rr_servo_t *motor_3;
+    rr_can_interface_t *iface;
+}RoboArm;
+
+typedef struct 
+{   
+    float motor_1;
+    float motor_2;
+    float motor_3;
+    float motor_4;
+    float motor_5;
+    float motor_6;
+    float motor_7;
+    float motor_8;
+}Pos_motors;
+
+
+typedef struct 
+{   
+    float motor_1;
+    float motor_2;
+    float motor_3;
+    float motor_4;
+    float motor_5;
+    float motor_6;
+    float motor_7;
+    float motor_8;
+}Vel_motors;
+
+
+typedef struct 
+{   
+    float motor_1;
+    float motor_2;
+    float motor_3;
+    float motor_4;
+    float motor_5;
+    float motor_6;
+    float motor_7;
+    float motor_8;
+}Temp_motors;
+
+typedef struct 
+{   
+    float motor_1;
+    float motor_2;
+    float motor_3;
+    float motor_4;
+    float motor_5;
+    float motor_6;
+    float motor_7;
+    float motor_8;
+}Current_motors;
+
+
+typedef struct 
+{
+    Pos_motors p;
+    Vel_motors v;
+    Current_motors c;
+    Temp_motors t; 
+}Var_motors;
+
+
+
+#ifdef __cplusplus
+#include "dynamixel_ros2.h"
+#include <string>
+#include <iostream>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+#include <thread>
+#include <chrono>
+#include <atomic>
+#include <iostream>
+#include <mutex>
+#include <vector>
+#include <array>
+
+
+typedef std::array <float,8> target_velocity;
+typedef std::array <float,8> max_velocity;
+typedef std::array <float,8> target_position;
+typedef std::array <float,8> max_position;
+
+class Manipulator
+{   
+    //Variables publicas
+    public:
+        RoboArm arm;
+        Var_motors var_m;
+        dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler("/dev/u2d2_dyn"); // your dxl port name;
+        dynamixel::PacketHandler *packetHandler  = dynamixel::PacketHandler::getPacketHandler(2.0); //protocol version;
+        
+        
+        public:
+        //Constructor
+        Manipulator() = default;
+        //Destructor
+        ~Manipulator()
+        {
+            
+        }
+        //Funciones
+        void init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler);
+        void set_max_Velocity(max_velocity vel_max);
+        void set_max_Position(max_position pos_max);
+        void set_Velocity_raw(max_velocity vel);
+        void set_Position_raw(target_position pos);
+        void set_Mode(char mode);
+        void getIDS(uint8_t *ids[8]);
+        void setIDS(uint8_t ids[8]);
+        void set_torque_state(bool state);
+        void get_torque_state();
+        void full_manual_mode();
+        void read_temperature();
+        void read_velocity();
+        void read_position();
+        void read_current();
+
+  };
+
+
+
+extern "C"{
+    #endif    
+    
+    #include <SDL2/SDL.h>
+    #include <SDL2/SDL_ttf.h>
+
+
+    void init_motors_arm(RoboArm *arm,Var_motors *var_m);
+    void finish_motors_arm(RoboArm *arm);
+    void manual_mode(RoboArm arm, Var_motors var_m);
+    void get_motors_arm_id(RoboArm *arm,int id[3]);
+    void set_motors_arm_id(RoboArm *arm,int id[3]);
+    void read_vel_arm(RoboArm *arm,Var_motors *var_m);
+    void read_current_arm(RoboArm *arm,Var_motors *var_m);
+    void read_temp_arm(RoboArm *arm,Var_motors *var_m);
+    void read_pos_arm(RoboArm *arm,Var_motors *var_m);
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif

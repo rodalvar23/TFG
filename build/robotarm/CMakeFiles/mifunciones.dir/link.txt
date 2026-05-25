@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmifunciones.a CMakeFiles/mifunciones.dir/src/ft_init_motors_arm.c.o CMakeFiles/mifunciones.dir/src/ft_manual_mode.c.o CMakeFiles/mifunciones.dir/src/Manipulator.cpp.o CMakeFiles/mifunciones.dir/src/ft_full_manual_mode.cpp.o
+/usr/bin/ranlib libmifunciones.a

@@ -1,0 +1,42 @@
+[0.007s] Invoking command in '/home/rodrigo/ros2_ws/build/robotarm': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/rodrigo/ros2_ws/build/robotarm -- -j12 -l12
+[0.027s] -- Found ament_cmake: 2.5.5 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.192s] -- Found rclcpp: 28.1.16 (/opt/ros/jazzy/share/rclcpp/cmake)
+[0.214s] -- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.221s] -- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.230s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.240s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.289s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[0.289s] -- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[0.343s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.394s] -- Found dynamixel_sdk: 4.0.3 (/opt/ros/jazzy/share/dynamixel_sdk/cmake)
+[0.397s] -- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.407s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[0.415s] -- Found rosidl_adapter: 4.6.7 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[0.568s] -- Configuring done (0.5s)
+[0.594s] -- Generating done (0.0s)
+[0.604s] -- Build files have been written to: /home/rodrigo/ros2_ws/build/robotarm
+[0.638s] [  4%] [32mBuilding C object CMakeFiles/mifunciones.dir/src/ft_init_motors_arm.c.o[0m
+[0.638s] [ 23%] [32mBuilding CXX object CMakeFiles/mifunciones.dir/src/Manipulator.cpp.o[0m
+[0.638s] [ 23%] Built target dynamixel_ros2_lib
+[0.638s] [ 23%] [32mBuilding CXX object CMakeFiles/mifunciones.dir/src/ft_full_manual_mode.cpp.o[0m
+[0.640s] [ 28%] [32mBuilding C object CMakeFiles/mifunciones.dir/src/ft_manual_mode.c.o[0m
+[0.663s] [ 57%] Built target testPositionControl
+[0.663s] [ 57%] Built target testCommunication
+[0.663s] [ 57%] Built target dmxlParamsMonitor
+[0.663s] [ 66%] Built target testPWMControl
+[0.663s] [ 76%] Built target blinkingLED
+[0.664s] [ 85%] Built target pinzaTest
+[1.481s] [ 90%] [32m[1mLinking CXX static library libmifunciones.a[0m
+[1.507s] [ 90%] Built target mifunciones
+[1.523s] [ 95%] [32mBuilding CXX object CMakeFiles/tester.dir/test/prueba_log.cpp.o[0m
+[2.137s] [01m[K/home/rodrigo/ros2_ws/src/RoboticArm C++/test/prueba_log.cpp:[m[K In function ‘[01m[Kint[01;32m[K main[m[K()[m[K’:
+[2.137s] [01m[K/home/rodrigo/ros2_ws/src/RoboticArm C++/test/prueba_log.cpp:5:17:[m[K [01;31m[Kerror: [m[K‘[01m[Klogger[m[K’ was not declared in this scope
+[2.137s]     5 |     RCLCPP_INFO([01;31m[Klogger[m[K, "\033[1;35mDMXL %d\033[0m: Current temperature limit is: %d C", 12, 200);
+[2.137s]       |                 [01;31m[K^~~~~~[m[K
+[2.146s] [01m[K/home/rodrigo/ros2_ws/src/RoboticArm C++/test/prueba_log.cpp:5:5:[m[K [01;31m[Kerror: [m[K‘[01m[KRCLCPP_INFO[m[K’ was not declared in this scope
+[2.146s]     5 |     [01;31m[KRCLCPP_INFO[m[K(logger, "\033[1;35mDMXL %d\033[0m: Current temperature limit is: %d C", 12, 200);
+[2.146s]       |     [01;31m[K^~~~~~~~~~~[m[K
+[2.204s] gmake[2]: *** [CMakeFiles/tester.dir/build.make:76: CMakeFiles/tester.dir/test/prueba_log.cpp.o] Error 1
+[2.204s] gmake[1]: *** [CMakeFiles/Makefile2:195: CMakeFiles/tester.dir/all] Error 2
+[2.204s] gmake: *** [Makefile:146: all] Error 2
+[2.206s] Invoked command in '/home/rodrigo/ros2_ws/build/robotarm' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/rodrigo/ros2_ws/build/robotarm -- -j12 -l12

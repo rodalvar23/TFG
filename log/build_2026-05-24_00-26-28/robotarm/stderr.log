@@ -1,0 +1,4 @@
+[01m[K/home/rodrigo/ros2_ws/src/RoboticArm C++/src/Manipulator.cpp:[m[K In member function ‘[01m[Kvoid Manipulator::[01;32m[KgetIDS[m[K(uint8_t**)[m[K’:
+[01m[K/home/rodrigo/ros2_ws/src/RoboticArm C++/src/Manipulator.cpp:328:16:[m[K [01;35m[Kwarning: [m[Kcast to pointer from integer of different size [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wint-to-pointer-cast-Wint-to-pointer-cast]8;;[m[K]
+  328 |       ids[i] = [01;35m[K(uint8_t*)id_arm[i][m[K;
+      |                [01;35m[K^~~~~~~~~~~~~~~~~~~[m[K
