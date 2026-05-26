@@ -35,11 +35,6 @@
 
 
 
-typedef struct {
-    struct timespec inicio;
-    long ms_objetivo;
-} TimerMS;
-
 typedef struct
 {
     rr_servo_t *motor_1;
@@ -128,6 +123,7 @@ typedef std::array <float,8> target_velocity;
 typedef std::array <float,8> max_velocity;
 typedef std::array <float,8> target_position;
 typedef std::array <float,8> max_position;
+typedef std::array <int,5> result;
 
 class Manipulator
 {   
@@ -137,7 +133,7 @@ class Manipulator
         Var_motors var_m;
         dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler("/dev/u2d2_dyn"); // your dxl port name;
         dynamixel::PacketHandler *packetHandler  = dynamixel::PacketHandler::getPacketHandler(2.0); //protocol version;
-        
+        max_position max_pos;
         
         public:
         //Constructor

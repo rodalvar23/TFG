@@ -1,7 +1,12 @@
 #include "../include/robotic_arm.h"
 
 
-
+/**
+ * @brief Populates a float array with specific motor data based on the selected mode.
+ * @param var Pointer to the structure containing all motor variables.
+ * @param vec Output array to store the requested data.
+ * @param select Char indicating the data type: 'v' (velocity), 'p' (position), 't' (temperature), 'c' (current).
+ */
 void fill(Var_motors *var, float vec[8], char select)
 {
   switch (select)
@@ -52,170 +57,543 @@ void fill(Var_motors *var, float vec[8], char select)
 }
 
 
-
+/**
+ * @brief Sets the maximum allowable velocity for all motors.
+ * Applies clamping to ensure values stay within safe hardware limits for both 
+ * Rozum arm motors (0-2) and Dynamixel claw motors (3-7).
+ * @param vel_max Array containing the target maximum velocities for the 8 motors.
+ */
 void Manipulator :: set_max_Velocity(max_velocity vel_max)
 {
+  result res_claw;
+  rr_ret_status_t res_arm_1;
+  rr_ret_status_t res_arm_2;
+  rr_ret_status_t res_arm_3;
   float conversion = 1/0.229;
-  rr_set_max_velocity(arm.motor_1,vel_max[0]);
-  rr_set_max_velocity(arm.motor_2,vel_max[1]);
-  rr_set_max_velocity(arm.motor_3,vel_max[2]);
-  packetHandler->write4ByteTxRx(portHandler,ID_3, VELOCITY_LIMIT, (int)vel_max[3]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_1, VELOCITY_LIMIT, (int)vel_max[4]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_5, VELOCITY_LIMIT, (int)vel_max[5]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_2, VELOCITY_LIMIT, (int)vel_max[6]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_12, VELOCITY_LIMIT, (int)vel_max[7]*conversion);
+  for (int i = 0; i < 8; i++)
+  {
+    if(i < 3) //Arm motors limits
+    {
+      if(vel_max[i] > 55)
+      {
+        vel_max[i] = 55;
+      }
+      else if(vel_max[i] < -55)
+      {
+        vel_max[i] = -55;
+      }
+    }
+    else //Claw motors limits
+    {
+      if(vel_max[i] > 233)
+      {
+        vel_max[i] = 233;
+      }
+      else if(vel_max[i] < -233)
+      {
+        vel_max[i] = -233;
+      }
+    }
+  }
+  
+  //Sets limits for Rozum motors
+  res_arm_1 = rr_set_max_velocity(arm.motor_1,vel_max[0]*60);
+  if(res_arm_1 != RET_OK)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 1");
+    exit(1);
+  }
+  rr_set_max_velocity(arm.motor_2,vel_max[1]*60);
+  if(res_arm_2 != RET_OK)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 2");
+    exit(1);
+  }
+  rr_set_max_velocity(arm.motor_3,vel_max[2]*60);
+  if(res_arm_3 != RET_OK)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 3");
+    exit(1);
+  }
+
+  //Sets limits for Dynamixel motors
+  res_claw[0] = packetHandler->write4ByteTxRx(portHandler,ID_3, VELOCITY_LIMIT, (int)vel_max[3]*conversion);
+  if(res_claw[0] != 0)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 4");
+    exit(1);
+  }
+  
+  res_claw[1] = packetHandler->write4ByteTxRx(portHandler,ID_1, VELOCITY_LIMIT, (int)vel_max[4]*conversion);
+  if(res_claw[1] != 0)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 5");
+    exit(1);
+  }
+
+  res_claw[2] = packetHandler->write4ByteTxRx(portHandler,ID_5, VELOCITY_LIMIT, (int)vel_max[5]*conversion);
+  if(res_claw[2] != 0)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 6");
+    exit(1);
+  }
+
+  res_claw[3] = packetHandler->write4ByteTxRx(portHandler,ID_2, VELOCITY_LIMIT, (int)vel_max[6]*conversion);
+  if(res_claw[3] != 0)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 7");
+    exit(1);
+  }
+  
+  res_claw[4] = packetHandler->write4ByteTxRx(portHandler,ID_12, VELOCITY_LIMIT, (int)vel_max[7]*conversion);
+  if(res_claw[4] != 0)
+  {
+    fprintf(stderr,"Fail to set max velocity in motor 8");
+    exit(1);
+  }
+
 }
 
+
+/**
+ * @brief Sets the maximum allowable position limits for the Dynamixel claw motors.
+ * @param pos_max Array containing the target maximum positions.
+ */
 void Manipulator :: set_max_Position(max_position pos_max)
 {
+  result res_claw;
   float conversion = 1/0.088;
 
-  packetHandler->write4ByteTxRx(portHandler,ID_1, POSITION_LIMIT, (int)pos_max[3]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_3, POSITION_LIMIT, (int)pos_max[4]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_5, POSITION_LIMIT, (int)pos_max[5]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_2, POSITION_LIMIT, (int)pos_max[6]*conversion);
-  packetHandler->write4ByteTxRx(portHandler,ID_12, POSITION_LIMIT, (int)pos_max[7]*conversion);
+  res_claw[0] = packetHandler->write4ByteTxRx(portHandler,ID_1, POSITION_LIMIT, (int)pos_max[3]*conversion);
+  if(res_claw[0] != 0)
+  {
+    fprintf(stderr,"Fail to set max position in motor 4");
+    exit(1);
+  }
   
+  res_claw[1] = packetHandler->write4ByteTxRx(portHandler,ID_3, POSITION_LIMIT, (int)pos_max[4]*conversion);
+  if(res_claw[1] != 0)
+  {
+    fprintf(stderr,"Fail to set max position in motor 5");
+    exit(1);
+  }
+
+  res_claw[2] = packetHandler->write4ByteTxRx(portHandler,ID_5, POSITION_LIMIT, (int)pos_max[5]*conversion);
+  if(res_claw[2] != 0)
+  {
+    fprintf(stderr,"Fail to set max position in motor 6");
+    exit(1);
+  }
+
+  res_claw[3] = packetHandler->write4ByteTxRx(portHandler,ID_2, POSITION_LIMIT, (int)pos_max[6]*conversion);
+  if(res_claw[3] != 0)
+  {
+    fprintf(stderr,"Fail to set max position in motor 7");
+    exit(1);
+  }
+
+  res_claw[4] = packetHandler->write4ByteTxRx(portHandler,ID_12, POSITION_LIMIT, (int)pos_max[7]*conversion);
+  if(res_claw[4] != 0)
+  {
+    fprintf(stderr,"Fail to set max position in motor 8");
+    exit(1);
+  }
+
 }
 
+
+/**
+ * @brief Initializes the Dynamixel motors for the robotic claw.
+ * Opens the serial port, sets the baud rate, configures motors to velocity mode, and enables torque.
+ */
 void init_claw_motors(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
 {
-  //Esta función se encarga de inicializar los motores dynamixel
 
-  //Abrimos el puerto
-  portHandler->openPort();
-  
-  //Configuramos los baudios a los que trabajan los motores
-  portHandler->setBaudRate(57600);
-  
-  //Configuramos los motores para trabajar por defecto en modo control de velocidad y que esten operativos para moverse
+  result res_claw_0;
+  result res_claw_1;
+  bool baud,port;
+
+  //Open the port
+  port = portHandler->openPort();
+  if(!port)
+  {
+    fprintf(stderr,"Fail to open port");
+    exit(1);
+  }
+  //Set baudrate
+  baud = portHandler->setBaudRate(57600);
+  if(!baud)
+  {
+    fprintf(stderr,"Fail to set baudrate");
+    exit(1);
+  }
+  // Configure operating mode and enable torque for each motor
   
   //id 1
-  packetHandler->write1ByteTxRx(portHandler, ID_1, OPERATING_MODE, VELOCITY_MODE);
-  packetHandler->write1ByteTxRx(portHandler, ID_1, TORQUE_ADDRESS, ON);
+  res_claw_0[1] = packetHandler->write1ByteTxRx(portHandler, ID_1, OPERATING_MODE, VELOCITY_MODE);
+  if(res_claw_0[1] != 0)
+  {
+    fprintf(stderr,"Fail to change operating mode of motor 5");
+    exit(1);
+  }
+  res_claw_1[1] = packetHandler->write1ByteTxRx(portHandler, ID_1, TORQUE_ADDRESS, ON);
+  if(res_claw_1[1] != 0)
+  {
+    fprintf(stderr,"Fail to activate torque of motor 5");
+    exit(1);
+  }
+
   //id 2
-  packetHandler->write1ByteTxRx(portHandler, ID_2, OPERATING_MODE, VELOCITY_MODE);
-  packetHandler->write1ByteTxRx(portHandler, ID_2, TORQUE_ADDRESS, ON);
+  res_claw_0[3] = packetHandler->write1ByteTxRx(portHandler, ID_2, OPERATING_MODE, VELOCITY_MODE);
+  if(res_claw_0[3] != 0)
+  {
+    fprintf(stderr,"Fail to change operating mode of motor 7");
+    exit(1);
+  }
+  res_claw_1[3] = packetHandler->write1ByteTxRx(portHandler, ID_2, TORQUE_ADDRESS, ON);
+  if(res_claw_1[3] != 0)
+  {
+    fprintf(stderr,"Fail to activate torque of motor 7");
+    exit(1);
+  }
 
   //id 3
-  packetHandler->write1ByteTxRx(portHandler, ID_3, OPERATING_MODE, VELOCITY_MODE);
-  packetHandler->write1ByteTxRx(portHandler, ID_3, TORQUE_ADDRESS, ON);
+  res_claw_0[0] = packetHandler->write1ByteTxRx(portHandler, ID_3, OPERATING_MODE, VELOCITY_MODE);
+  if(res_claw_0[0] != 0)
+  {
+    fprintf(stderr,"Fail to change operating mode of motor 4");
+    exit(1);
+  }
+  res_claw_1[0] = packetHandler->write1ByteTxRx(portHandler, ID_3, TORQUE_ADDRESS, ON);
+  if(res_claw_1[0] != 0)
+  {
+    fprintf(stderr,"Fail to activate torque of motor 4");
+    exit(1);
+  }
 
   //id 5
-  packetHandler->write1ByteTxRx(portHandler, ID_5, OPERATING_MODE, VELOCITY_MODE);
-  packetHandler->write1ByteTxRx(portHandler, ID_5, TORQUE_ADDRESS, ON);
-
+  res_claw_0[2] = packetHandler->write1ByteTxRx(portHandler, ID_5, OPERATING_MODE, VELOCITY_MODE);
+  if(res_claw_0[2] != 0)
+  {
+    fprintf(stderr,"Fail to change operating mode of motor 6");
+    exit(1);
+  }
+  res_claw_1[2] = packetHandler->write1ByteTxRx(portHandler, ID_5, TORQUE_ADDRESS, ON);
+  if(res_claw_1[2] != 0)
+  {
+    fprintf(stderr,"Fail to activate torque of motor 6");
+    exit(1);
+  }
 
   //id 12
-  packetHandler->write1ByteTxRx(portHandler, ID_12, OPERATING_MODE, VELOCITY_MODE);
-  packetHandler->write1ByteTxRx(portHandler, ID_12, TORQUE_ADDRESS, ON);
-  
+  res_claw_0[4] = packetHandler->write1ByteTxRx(portHandler, ID_12, OPERATING_MODE, VELOCITY_MODE);
+  if(res_claw_0[4] != 0)
+  {
+    fprintf(stderr,"Fail to change operating mode of motor 8");
+    exit(1);
+  }
+  res_claw_1[4] = packetHandler->write1ByteTxRx(portHandler, ID_12, TORQUE_ADDRESS, ON);
+  if(res_claw_0[4] != 0)
+  {
+    fprintf(stderr,"Fail to change operating mode of motor 8");
+    exit(1);
+  }
+
 }
 
+
+/**
+ * @brief Enables or disables the torque for all Dynamixel claw motors.
+ * @param state Boolean value to set the torque state (true for ON, false for OFF).
+ */
 void Manipulator :: set_torque_state(bool state)
 {
-
+  result res_torq;
   //id 1
-  packetHandler->write1ByteTxRx(portHandler, ID_1, TORQUE_ADDRESS, state);
+  res_torq[1] = packetHandler->write1ByteTxRx(portHandler, ID_1, TORQUE_ADDRESS, state);
+  if(res_torq[1] != 0)
+  {
+    fprintf(stderr,"Fail to set torque of motor 5");
+    exit(1);
+  }
   //id 2
-  packetHandler->write1ByteTxRx(portHandler, ID_2, TORQUE_ADDRESS, state);
-
+  res_torq[3] = packetHandler->write1ByteTxRx(portHandler, ID_2, TORQUE_ADDRESS, state);
+  if(res_torq[3] != 0)
+  {
+    fprintf(stderr,"Fail to set torque of motor 7");
+    exit(1);
+  }
   //id 3
-  packetHandler->write1ByteTxRx(portHandler, ID_3, TORQUE_ADDRESS, state);
-
+  res_torq[0] = packetHandler->write1ByteTxRx(portHandler, ID_3, TORQUE_ADDRESS, state);
+  if(res_torq[0] != 0)
+  {
+    fprintf(stderr,"Fail to set torque of motor 4");
+    exit(1);
+  }
   //id 5
-  packetHandler->write1ByteTxRx(portHandler, ID_5, TORQUE_ADDRESS, state);
-
+  res_torq[2] = packetHandler->write1ByteTxRx(portHandler, ID_5, TORQUE_ADDRESS, state);
+  if(res_torq[2] != 0)
+  {
+    fprintf(stderr,"Fail to set torque of motor 6");
+    exit(1);
+  }
   //id 12
-  packetHandler->write1ByteTxRx(portHandler, ID_12, TORQUE_ADDRESS, state);
-  
+  res_torq[4] = packetHandler->write1ByteTxRx(portHandler, ID_12, TORQUE_ADDRESS, state);
+  if(res_torq[1] != 0)
+  {
+    fprintf(stderr,"Fail to set torque of motor 8");
+    exit(1);
+  }
 }
 
+
+/**
+ * @brief Reads the current torque enabled status from all Dynamixel claw motors.
+ */
 void Manipulator :: get_torque_state()
 {
 
   uint8_t ids[5];
+  result res_torq;
   //id 1
-  packetHandler->read1ByteTxRx(portHandler, ID_1, TORQUE_ADDRESS, &ids[0]);
+  res_torq[1] = packetHandler->read1ByteTxRx(portHandler, ID_1, TORQUE_ADDRESS, &ids[0]);
+  if(res_torq[1] != 0)
+  {
+    fprintf(stderr,"Fail to get torque of motor 5");
+    exit(1);
+  }
   //id 2
-  packetHandler->read1ByteTxRx(portHandler, ID_2, TORQUE_ADDRESS, &ids[1]);
-
+  res_torq[3] = packetHandler->read1ByteTxRx(portHandler, ID_2, TORQUE_ADDRESS, &ids[1]);
+  if(res_torq[3] != 0)
+  {
+    fprintf(stderr,"Fail to get torque of motor 7");
+    exit(1);
+  }
   //id 3
-  packetHandler->read1ByteTxRx(portHandler, ID_3, TORQUE_ADDRESS, &ids[2]);
-
+  res_torq[0] = packetHandler->read1ByteTxRx(portHandler, ID_3, TORQUE_ADDRESS, &ids[2]);
+  if(res_torq[0] != 0)
+  {
+    fprintf(stderr,"Fail to get torque of motor 4");
+    exit(1);
+  }
   //id 5
-  packetHandler->read1ByteTxRx(portHandler, ID_5, TORQUE_ADDRESS, &ids[3]);
-
+  res_torq[2] = packetHandler->read1ByteTxRx(portHandler, ID_5, TORQUE_ADDRESS, &ids[3]);
+  if(res_torq[2] != 0)
+  {
+    fprintf(stderr,"Fail to get torque of motor 3");
+    exit(1);
+  }
   //id 12
-  packetHandler->read1ByteTxRx(portHandler, ID_12, TORQUE_ADDRESS, &ids[4]);
-  
+  res_torq[4] = packetHandler->read1ByteTxRx(portHandler, ID_12, TORQUE_ADDRESS, &ids[4]);
+  if(res_torq[4] != 0)
+  {
+    fprintf(stderr,"Fail to get torque of motor 8");
+    exit(1);
+  }
 }
 
+
+/**
+ * @brief Retrieves the hardware IDs from the Dynamixel motors.
+ */
 void get_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler, uint8_t *id[5])
 {
+  result res_id;
   //id 1
-  packetHandler->read1ByteTxRx(portHandler, ID_1, 7, id[1]);
-  
+  res_id[1] = packetHandler->read1ByteTxRx(portHandler, ID_1, 7, id[1]);
+  if(res_id[1] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 5");
+    exit(1);
+  }
   //id 2
-  packetHandler->read1ByteTxRx(portHandler, ID_2, 7, id[3]);
-
+  res_id[3] =  packetHandler->read1ByteTxRx(portHandler, ID_2, 7, id[3]);
+  if(res_id[3] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 7");
+    exit(1);
+  }
   //id 3
-  packetHandler->read1ByteTxRx(portHandler, ID_3,7, id[0]);
-
+  res_id[0] =  packetHandler->read1ByteTxRx(portHandler, ID_3,7, id[0]);
+  if(res_id[0] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 4");
+    exit(1);
+  }
   //id 5
-  packetHandler->read1ByteTxRx(portHandler, ID_5, 7, id[2]);
-
+  res_id[2] =  packetHandler->read1ByteTxRx(portHandler, ID_5, 7, id[2]);
+  if(res_id[2] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 6");
+    exit(1);
+  }
   //id 12
-  packetHandler->read1ByteTxRx(portHandler, ID_12, 7, id[4]);
-
+  res_id[4] =  packetHandler->read1ByteTxRx(portHandler, ID_12, 7, id[4]);
+  if(res_id[4] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 8");
+    exit(1);
+  }
 }
 
+
+/**
+ * @brief Writes new hardware IDs to the Dynamixel motors.
+ */
 void set_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler, uint8_t id[5])
 {
+  result res_id;
   //id 1
-  packetHandler->write1ByteTxRx(portHandler, ID_1, 7, id[1]);
-  
+  res_id[1] = packetHandler->write1ByteTxRx(portHandler, ID_1, 7, id[1]);
+  if(res_id[1] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 5");
+    exit(1);
+  }
   //id 2
-  packetHandler->write1ByteTxRx(portHandler, ID_2, 7, id[3]);
-
+  res_id[3] = packetHandler->write1ByteTxRx(portHandler, ID_2, 7, id[3]);
+  if(res_id[3] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 7");
+    exit(1);
+  }
   //id 3
-  packetHandler->write1ByteTxRx(portHandler, ID_3,7, id[0]);
-
+  res_id[0] = packetHandler->write1ByteTxRx(portHandler, ID_3,7, id[0]);
+  if(res_id[0] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 4");
+    exit(1);
+  }
   //id 5
-  packetHandler->write1ByteTxRx(portHandler, ID_5, 7, id[2]);
-
+  res_id[2] = packetHandler->write1ByteTxRx(portHandler, ID_5, 7, id[2]);
+  if(res_id[2] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 6");
+    exit(1);
+  }
   //id 12
-  packetHandler->write1ByteTxRx(portHandler, ID_12, 7, id[4]);
+  res_id[4] = packetHandler->write1ByteTxRx(portHandler, ID_12, 7, id[4]);
+  if(res_id[4] != 0)
+  {
+    fprintf(stderr,"Fail to get of motor 8");
+    exit(1);
+  }
 }
 
+
+/**
+ * @brief Master initialization function for the entire manipulator.
+ * Boots up the Rozum base arm motors first, followed by the Dynamixel claw motors.
+ */
 void Manipulator::init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
 { 
-  //Esta función se encarga de inicializar todos los motores del manipulador
+    init_motors_arm(arm,var_m); // Start position motors (Rozum)
 
-    //Ponemos en marcha los motores de posición
-    init_motors_arm(arm,var_m);
-
-    //Ponemos en marcha los motores de orientación
-    init_claw_motors(portHandler,packetHandler);
+    init_claw_motors(portHandler,packetHandler); // Start orientation/claw motors (Dynamixel)
 }
 
+
+/**
+ * @brief Commands velocities to the entire manipulator.
+ * Implements software position limits for the Rozum arm motors to prevent over-travel.
+ * Uses GroupSyncWrite for simultaneous command execution on Dynamixel motors.
+ * @param vel Target velocity array for all 8 motors.
+ */
 void Manipulator :: set_Velocity_raw(target_velocity vel)
 {
-  //Esta función se encarga de mover los motores del manipulador segun la velocidad que reciba la función
     dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, GOAL_VELOCITY_ADDRESS, 4);
     uint8_t param_goal_velocity1[4];
     uint8_t param_goal_velocity3[4];
     uint8_t param_goal_velocity5[4];
     uint8_t param_goal_velocity2[4];
     uint8_t param_goal_velocity12[4];
+    rr_ret_status_t res_arm_1;
+    rr_ret_status_t res_arm_2;
+    rr_ret_status_t res_arm_3;
+    result res_claw;
+    int tx;
     float conversion = 1/0.229;
-    //Establecemos la velocidad de los motores de rozum
-    rr_set_velocity_motor(arm.motor_1,vel[0]);
-    rr_set_velocity_motor(arm.motor_2,vel[1]);
-    rr_set_velocity_motor(arm.motor_3,vel[2]);
+    read_pos_arm(&arm,&var_m); // Update current position to check limits
+    
+    // --- Rozum Motors Velocity Control with Position Limits ---
+    
+    //Motor 1
+    if(max_pos[0] > 0)
+    {
+      if(var_m.p.motor_1 >= max_pos[0])
+      {
+        res_arm_1 = rr_set_velocity_motor(arm.motor_1,0);
+      }
+    }
+    else if(max_pos[0] < 0)
+    {
+      if(var_m.p.motor_1 <= max_pos[0])
+      {
+        res_arm_1 = rr_set_velocity_motor(arm.motor_1,0);
+      }
+    }
+    else
+    {
+      res_arm_1 = rr_set_velocity_motor(arm.motor_1,vel[0]);
+    }
+    if(res_arm_1 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 1");
+      exit(1);
+    }
 
-    //Establecemos la velocidad de los motores dynamixel
+    //Motor 2
+    if(max_pos[1] > 0)
+    {
+      if(var_m.p.motor_2 >= max_pos[1])
+      {
+        res_arm_2 = rr_set_velocity_motor(arm.motor_2,0);
+      }
+    }
+    else if(max_pos[1] < 0)
+    {
+      if(var_m.p.motor_2 <= max_pos[1])
+      {
+        res_arm_2 = rr_set_velocity_motor(arm.motor_2,0);
+      }
+    }
+    else
+    {
+      res_arm_2 = rr_set_velocity_motor(arm.motor_2,vel[1]);
+    }
+    if(res_arm_2 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 2");
+      exit(1);
+    }
 
+    //Motor 3
+    if(max_pos[3] > 0)
+    {
+      if(var_m.p.motor_3 >= max_pos[2])
+      {
+        res_arm_3 = rr_set_velocity_motor(arm.motor_3,0);
+      }
+    }
+    else if(max_pos[2] < 0)
+    {
+      if(var_m.p.motor_3 <= max_pos[2])
+      {
+        res_arm_3 = rr_set_velocity_motor(arm.motor_3,0);
+      }
+    }
+    else
+    {
+      res_arm_3 = rr_set_velocity_motor(arm.motor_3,vel[2]);
+    }
+    if(res_arm_3 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 3");
+      exit(1);
+    }
+
+    // --- Dynamixel Motors GroupSyncWrite Preparation ---
+    // Splitting velocity values into 4-byte arrays
     param_goal_velocity1[0] = DXL_LOBYTE(DXL_LOWORD(vel[4]));
     param_goal_velocity1[1] = DXL_HIBYTE(DXL_LOWORD(vel[4]));
     param_goal_velocity1[2] = DXL_LOBYTE(DXL_HIWORD(vel[4]));
@@ -242,30 +620,136 @@ void Manipulator :: set_Velocity_raw(target_velocity vel)
     param_goal_velocity12[2] = DXL_LOBYTE(DXL_HIWORD(vel[12]));
     param_goal_velocity12[3] = DXL_HIBYTE(DXL_HIWORD(vel[12]));
     
-    groupSyncWrite.addParam(ID_1, param_goal_velocity1);
-    groupSyncWrite.addParam(ID_3, param_goal_velocity3);
-    groupSyncWrite.addParam(ID_5, param_goal_velocity5);
-    groupSyncWrite.addParam(ID_2, param_goal_velocity2);
-    groupSyncWrite.addParam(ID_12, param_goal_velocity12);
-
-    groupSyncWrite.txPacket();
+    res_claw[1] = groupSyncWrite.addParam(ID_1, param_goal_velocity1);
+    if(res_claw[1] != 0)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 5");
+      exit(1);
+    }
+    res_claw[0] = groupSyncWrite.addParam(ID_3, param_goal_velocity3);
+    if(res_claw[0] != 0)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 4");
+      exit(1);
+    }
+    res_claw[2] = groupSyncWrite.addParam(ID_5, param_goal_velocity5);
+    if(res_claw[2] != 0)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 6");
+      exit(1);
+    }
+    res_claw[3] = groupSyncWrite.addParam(ID_2, param_goal_velocity2);
+    if(res_claw[3] != 0)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 7");
+      exit(1);
+    }
+    res_claw[4] = groupSyncWrite.addParam(ID_12, param_goal_velocity12);
+    if(res_claw[4] != 0)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 8");
+      exit(1);
+    }
+    tx = groupSyncWrite.txPacket();
+    if(tx == COMM_NOT_AVAILABLE)
+    {
+      fprintf(stderr,"Fail to send the package");
+      exit(1);
+    }
     groupSyncWrite.clearParam();
-/*
-    packetHandler->write4ByteTxRx(portHandler, ID_1, GOAL_VELOCITY_ADRESS, uint32_t(vel[4]*conversion));
-    packetHandler->write4ByteTxRx(portHandler, ID_2, GOAL_VELOCITY_ADRESS, uint32_t(vel[6]*conversion));
-    packetHandler->write4ByteTxRx(portHandler, ID_12, GOAL_VELOCITY_ADRESS, uint32_t(vel[7]*conversion));
-    packetHandler->write4ByteTxRx(portHandler, ID_3, GOAL_VELOCITY_ADRESS, uint32_t(vel[3]*conversion));
-    packetHandler->write4ByteTxRx(portHandler, ID_5, GOAL_VELOCITY_ADRESS, uint32_t(vel[5]*conversion));*/
 }
 
+/**
+ * @brief Commands absolute positions to the entire manipulator.
+ * Includes clamping for the Rozum arm motors to prevent exceeding physical limits.
+ * Uses GroupSyncWrite for Dynamixel position commands.
+ * @param pos Target position array for all 8 motors.
+ */
 void Manipulator :: set_Position_raw(target_position pos)
 {
-  //Esta función se encarga de mover los motores del manipulador a la posición que reciba la función
+    rr_ret_status_t res_arm_1;
+    rr_ret_status_t res_arm_2;
+    rr_ret_status_t res_arm_3;
+    result res_claw;
+    int tx;
+    read_pos_arm(&arm,&var_m);
+    // --- Rozum Motors Position Control with position limits---
 
-    //Movemos de los motores de rozum a la posición designada
-    rr_set_position(arm.motor_1,pos[0]);
-    rr_set_position(arm.motor_2,pos[1]);
-    rr_set_position(arm.motor_3,pos[2]);
+    //Motor 1
+    if(max_pos[0] > 0)
+    {
+      if(pos[0] >= max_pos[0])
+      {
+        res_arm_1 = rr_set_position(arm.motor_1,var_m.p.motor_1);
+      }
+    }
+    else if(max_pos[0] < 0)
+    {
+      if(pos[0] <= max_pos[0])
+      {
+        res_arm_1 = rr_set_position(arm.motor_1,var_m.p.motor_1);
+      }
+    }
+    else
+    {
+      res_arm_1 = rr_set_position(arm.motor_1,pos[0]);
+    }
+    if(res_arm_1 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set position of motor 1");
+      exit(1);
+    }
+    
+    
+    //Motor 2
+    if(max_pos[1] > 0)
+    {
+      if(pos[1] >= max_pos[1])
+      {
+        res_arm_2 = rr_set_position(arm.motor_2,var_m.p.motor_2);
+      }
+    }
+    else if(max_pos[1] < 0)
+    {
+      if(pos[1] <= max_pos[1])
+      {
+        res_arm_2 = rr_set_position(arm.motor_2,var_m.p.motor_2);
+      }
+    }
+    else
+    {
+      res_arm_2 = rr_set_position(arm.motor_2,pos[1]);
+    }
+    if(res_arm_2 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set position of motor 2");
+      exit(1);
+    }
+    
+    //Motor 3
+    if(max_pos[2] > 0)
+    {
+      if(pos[2] >= max_pos[2])
+      {
+        res_arm_3 = rr_set_position(arm.motor_3,var_m.p.motor_3);
+      }
+    }
+    else if(max_pos[2] < 0)
+    {
+      if(pos[2] <= max_pos[2])
+      {
+        res_arm_3 = rr_set_position(arm.motor_3,var_m.p.motor_3);
+      }
+    }
+    else
+    {
+      res_arm_3 = rr_set_position(arm.motor_3,pos[2]);
+    }
+    if(res_arm_3 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set position of motor 3");
+      exit(1);
+    }
 
 
     dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, GOAL_POSITION_ADDRESS, 4);
@@ -275,7 +759,8 @@ void Manipulator :: set_Position_raw(target_position pos)
     uint8_t param_goal_pos2[4];
     uint8_t param_goal_pos12[4];
 
-    //Establecemos la velocidad de los motores dynamixel
+    // --- Dynamixel Motors GroupSyncWrite Preparation ---
+    // Splitting position values into 4-byte arrays
 
     param_goal_pos1[0] = DXL_LOBYTE(DXL_LOWORD(pos[4]));
     param_goal_pos1[1] = DXL_HIBYTE(DXL_LOWORD(pos[4]));
@@ -303,58 +788,129 @@ void Manipulator :: set_Position_raw(target_position pos)
     param_goal_pos12[2] = DXL_LOBYTE(DXL_HIWORD(pos[12]));
     param_goal_pos12[3] = DXL_HIBYTE(DXL_HIWORD(pos[12]));
     
-    groupSyncWrite.addParam(ID_1, param_goal_pos1);
-    groupSyncWrite.addParam(ID_3, param_goal_pos3);
-    groupSyncWrite.addParam(ID_5, param_goal_pos5);
-    groupSyncWrite.addParam(ID_2, param_goal_pos2);
-    groupSyncWrite.addParam(ID_12, param_goal_pos12);
-
-    groupSyncWrite.txPacket();
+    res_claw[1] = groupSyncWrite.addParam(ID_1, param_goal_pos1);
+    if(res_claw[1] != 0)
+    {
+      fprintf(stderr,"Fail to set position of motor 5");
+      exit(1);
+    }
+    res_claw[0] = groupSyncWrite.addParam(ID_3, param_goal_pos3);
+    if(res_claw[0] != 0)
+    {
+      fprintf(stderr,"Fail to set position of motor 4");
+      exit(1);
+    }
+    res_claw[2] = groupSyncWrite.addParam(ID_5, param_goal_pos5);
+    if(res_claw[2] != 0)
+    {
+      fprintf(stderr,"Fail to set position of motor 6");
+      exit(1);
+    }
+    res_claw[3] = groupSyncWrite.addParam(ID_2, param_goal_pos2);
+    if(res_claw[3] != 0)
+    {
+      fprintf(stderr,"Fail to set position of motor 7");
+      exit(1);
+    }
+    res_claw[4] = groupSyncWrite.addParam(ID_12, param_goal_pos12);
+    if(res_claw[4] != 0)
+    {
+      fprintf(stderr,"Fail to set position of motor 8");
+      exit(1);
+    }
+    tx = groupSyncWrite.txPacket();
+    if(tx == COMM_NOT_AVAILABLE)
+    {
+      fprintf(stderr,"Fail to send the package");
+      exit(1);
+    }
     groupSyncWrite.clearParam();
-    //Movemos de los motores dynamixel a la posición designada
-    /*
-    packetHandler->write4ByteTxRx(portHandler, ID_1, GOAL_POSITION_ADDRESS, uint32_t(pos[4]));
-    packetHandler->write4ByteTxRx(portHandler, ID_2, GOAL_POSITION_ADDRESS, uint32_t(pos[6]));
-    packetHandler->write4ByteTxRx(portHandler, ID_12, GOAL_POSITION_ADDRESS, uint32_t(pos[7]));
-    packetHandler->write4ByteTxRx(portHandler, ID_3, GOAL_POSITION_ADDRESS, uint32_t(pos[3]));
-    packetHandler->write4ByteTxRx(portHandler, ID_5, GOAL_POSITION_ADDRESS, uint32_t(pos[5]));*/
 }
 
+
+/**
+ * @brief Switches the operating mode of the Dynamixel claw motors.
+ * @param mode Char selector: 'v'/'V' for Velocity mode, 'p'/'P' for Position mode.
+ */
 void Manipulator::set_Mode(char mode)
 {
+  result res_claw;
+
   if(mode == 'v' || mode == 'V')
   {
     //id 1
-    packetHandler->write1ByteTxRx(portHandler, ID_1, OPERATING_MODE, VELOCITY_MODE);
-    
+    res_claw[1] = packetHandler->write1ByteTxRx(portHandler, ID_1, OPERATING_MODE, VELOCITY_MODE);
+    if(res_claw[1] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to velocity mode of motor 5");
+      exit(1);
+    }
     //id 2
-    packetHandler->write1ByteTxRx(portHandler, ID_2, OPERATING_MODE, VELOCITY_MODE);
-  
+    res_claw[3] =  packetHandler->write1ByteTxRx(portHandler, ID_2, OPERATING_MODE, VELOCITY_MODE);
+    if(res_claw[3] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to velocity mode of motor 7");
+      exit(1);
+    }
     //id 3
-    packetHandler->write1ByteTxRx(portHandler, ID_3, OPERATING_MODE, VELOCITY_MODE);
-  
+    res_claw[0] =  packetHandler->write1ByteTxRx(portHandler, ID_3, OPERATING_MODE, VELOCITY_MODE);
+    if(res_claw[0] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to velocity mode of motor 4");
+      exit(1);
+    }
     //id 5
-    packetHandler->write1ByteTxRx(portHandler, ID_5, OPERATING_MODE, VELOCITY_MODE);
-  
+    res_claw[2] =  packetHandler->write1ByteTxRx(portHandler, ID_5, OPERATING_MODE, VELOCITY_MODE);
+    if(res_claw[2] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to velocity mode of motor 6");
+      exit(1);
+    }
     //id 12
-    packetHandler->write1ByteTxRx(portHandler, ID_12, OPERATING_MODE, VELOCITY_MODE);
+    res_claw[4] =  packetHandler->write1ByteTxRx(portHandler, ID_12, OPERATING_MODE, VELOCITY_MODE);
+    if(res_claw[1] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to velocity mode of motor 8");
+      exit(1);
+    }
   }
   else if(mode == 'p' || mode == 'P')
   {
     //id 1
-    packetHandler->write1ByteTxRx(portHandler, ID_1, OPERATING_MODE, POSITION_MODE);
-    
+    res_claw[1] =  packetHandler->write1ByteTxRx(portHandler, ID_1, OPERATING_MODE, POSITION_MODE);
+    if(res_claw[1] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to position mode of motor 5");
+      exit(1);
+    }
     //id 2
-    packetHandler->write1ByteTxRx(portHandler, ID_2, OPERATING_MODE, POSITION_MODE);
-  
+    res_claw[3] =  packetHandler->write1ByteTxRx(portHandler, ID_2, OPERATING_MODE, POSITION_MODE);
+    if(res_claw[3] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to position mode of motor 7");
+      exit(1);
+    }
     //id 3
-    packetHandler->write1ByteTxRx(portHandler, ID_3, OPERATING_MODE, POSITION_MODE);
-  
+    res_claw[0] =  packetHandler->write1ByteTxRx(portHandler, ID_3, OPERATING_MODE, POSITION_MODE);
+    if(res_claw[0] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to position mode of motor 4");
+      exit(1);
+    }
     //id 5
-    packetHandler->write1ByteTxRx(portHandler, ID_5, OPERATING_MODE, POSITION_MODE);
-  
+    res_claw[2] =  packetHandler->write1ByteTxRx(portHandler, ID_5, OPERATING_MODE, POSITION_MODE);
+    if(res_claw[2] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to position mode of motor 6");
+      exit(1);
+    }
     //id 12
-    packetHandler->write1ByteTxRx(portHandler, ID_12, OPERATING_MODE, POSITION_MODE);
+    res_claw[4] =  packetHandler->write1ByteTxRx(portHandler, ID_12, OPERATING_MODE, POSITION_MODE);
+    if(res_claw[4] != 0)
+    {
+      fprintf(stderr,"Fail to change operating mode to position mode of motor 8");
+      exit(1);
+    }
   }
   else
   {
@@ -363,6 +919,10 @@ void Manipulator::set_Mode(char mode)
   }
 }
 
+
+/**
+ * @brief Consolidates hardware IDs from both the Rozum arm and Dynamixel claw into a single array.
+ */
 void Manipulator:: getIDS(uint8_t *ids[8])
 {
   uint8_t *id_arm[3];
@@ -382,6 +942,10 @@ void Manipulator:: getIDS(uint8_t *ids[8])
   }
 }
 
+
+/**
+ * @brief Sets hardware IDs for both the Rozum arm and Dynamixel claw from a single array.
+ */
 void Manipulator:: setIDS(uint8_t ids[8])
 {
   int id_arm[3];
@@ -401,15 +965,51 @@ void Manipulator:: setIDS(uint8_t ids[8])
   set_id_claw(portHandler,packetHandler,id_claw);
 }
 
+
+/**
+ * @brief Reads real-time temperature from all Dynamixel claw motors via GroupSyncRead.
+ */
 void read_temp_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
 {
   dynamixel::GroupSyncRead groupSyncRead(portHandler, packetHandler, PRESENT_TEMPERATURE_ADDRESS, 4);
-  groupSyncRead.addParam(ID_1);
-  groupSyncRead.addParam(ID_3);
-  groupSyncRead.addParam(ID_5);
-  groupSyncRead.addParam(ID_2);
-  groupSyncRead.addParam(ID_12);
-  groupSyncRead.txRxPacket();
+  result res_temp;
+  int rx;
+  res_temp[1] = groupSyncRead.addParam(ID_1);
+  if(res_temp[1] != 0)
+  {
+    fprintf(stderr,"Fail to read temperature of motor 5");
+    exit(1);
+  }
+  res_temp[0] = groupSyncRead.addParam(ID_3);
+  if(res_temp[0] != 0)
+  {
+    fprintf(stderr,"Fail to read temperature of motor 4");
+    exit(1);
+  }
+  res_temp[2] = groupSyncRead.addParam(ID_5);
+  if(res_temp[2] != 0)
+  {
+    fprintf(stderr,"Fail to read temperature of motor 6");
+    exit(1);
+  }
+  res_temp[3] = groupSyncRead.addParam(ID_2);
+  if(res_temp[3] != 0)
+  {
+    fprintf(stderr,"Fail to read temperature of motor 7");
+    exit(1);
+  }
+  res_temp[4] = groupSyncRead.addParam(ID_12);
+  if(res_temp[4] != 0)
+  {
+    fprintf(stderr,"Fail to read temperature of motor 8");
+    exit(1);
+  }
+  rx = groupSyncRead.txRxPacket();
+  if(rx == COMM_NOT_AVAILABLE)
+  {
+    fprintf(stderr,"Fail to receive the package of temperatures readings");
+    exit(1);
+  }
   var_m->t.motor_4 = groupSyncRead.getData(ID_3,PRESENT_TEMPERATURE_ADDRESS,4);
   var_m->t.motor_5 = groupSyncRead.getData(ID_1,PRESENT_TEMPERATURE_ADDRESS,4);
   var_m->t.motor_6 = groupSyncRead.getData(ID_5,PRESENT_TEMPERATURE_ADDRESS,4);
@@ -417,15 +1017,51 @@ void read_temp_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynami
   var_m->t.motor_8 = groupSyncRead.getData(ID_12,PRESENT_TEMPERATURE_ADDRESS,4);
 }
 
+
+/**
+ * @brief Reads current position from all Dynamixel claw motors via GroupSyncRead.
+ */
 void read_pos_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
 {
   dynamixel::GroupSyncRead groupSyncRead(portHandler, packetHandler, PRESENT_POSITION_ADDRESS, 4);
-  groupSyncRead.addParam(ID_1);
-  groupSyncRead.addParam(ID_3);
-  groupSyncRead.addParam(ID_5);
-  groupSyncRead.addParam(ID_2);
-  groupSyncRead.addParam(ID_12);
-  groupSyncRead.txRxPacket();
+  result res_temp;
+  int rx;
+  res_temp[1] = groupSyncRead.addParam(ID_1);
+  if(res_temp[1] != 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 5");
+    exit(1);
+  }
+  res_temp[0] = groupSyncRead.addParam(ID_3);
+  if(res_temp[0] != 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 4");
+    exit(1);
+  }
+  res_temp[2] = groupSyncRead.addParam(ID_5);
+  if(res_temp[2] != 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 6");
+    exit(1);
+  }
+  res_temp[3] = groupSyncRead.addParam(ID_2);
+  if(res_temp[3] != 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 7");
+    exit(1);
+  }
+  res_temp[4] = groupSyncRead.addParam(ID_12);
+  if(res_temp[4] != 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 8");
+    exit(1);
+  }
+  rx = groupSyncRead.txRxPacket();
+  if(rx == COMM_NOT_AVAILABLE)
+  {
+    fprintf(stderr,"Fail to receive the package of positions readings");
+    exit(1);
+  }
   var_m->p.motor_4 = groupSyncRead.getData(ID_3,PRESENT_POSITION_ADDRESS,4);
   var_m->p.motor_5 = groupSyncRead.getData(ID_1,PRESENT_POSITION_ADDRESS,4);
   var_m->p.motor_6 = groupSyncRead.getData(ID_5,PRESENT_POSITION_ADDRESS,4);
@@ -433,15 +1069,51 @@ void read_pos_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamix
   var_m->p.motor_8 = groupSyncRead.getData(ID_12,PRESENT_POSITION_ADDRESS,4);
 }
 
+
+/**
+ * @brief Reads current velocity from all Dynamixel claw motors via GroupSyncRead.
+ */
 void read_vel_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
 {
   dynamixel::GroupSyncRead groupSyncRead(portHandler, packetHandler, PRESENT_VELOCITY_ADDRESS, 4);
-  groupSyncRead.addParam(ID_1);
-  groupSyncRead.addParam(ID_3);
-  groupSyncRead.addParam(ID_5);
-  groupSyncRead.addParam(ID_2);
-  groupSyncRead.addParam(ID_12);
-  groupSyncRead.txRxPacket();
+  result res_temp;
+  int rx;
+  res_temp[1] = groupSyncRead.addParam(ID_1);
+  if(res_temp[1] != 0)
+  {
+    fprintf(stderr,"Fail to read velocity of motor 5");
+    exit(1);
+  }
+  res_temp[0] = groupSyncRead.addParam(ID_3);
+  if(res_temp[0] != 0)
+  {
+    fprintf(stderr,"Fail to read velocity of motor 4");
+    exit(1);
+  }
+  res_temp[2] = groupSyncRead.addParam(ID_5);
+  if(res_temp[2] != 0)
+  {
+    fprintf(stderr,"Fail to read velocity of motor 6");
+    exit(1);
+  }
+  res_temp[3] = groupSyncRead.addParam(ID_2);
+  if(res_temp[3] != 0)
+  {
+    fprintf(stderr,"Fail to read velocity of motor 7");
+    exit(1);
+  }
+  res_temp[4] = groupSyncRead.addParam(ID_12);
+  if(res_temp[4] != 0)
+  {
+    fprintf(stderr,"Fail to read velocity of motor 8");
+    exit(1);
+  }
+  rx = groupSyncRead.txRxPacket();
+  if(rx == COMM_NOT_AVAILABLE)
+  {
+    fprintf(stderr,"Fail to receive the package of velocities readings");
+    exit(1);
+  }
   var_m->v.motor_4 = groupSyncRead.getData(ID_3,PRESENT_VELOCITY_ADDRESS,4);
   var_m->v.motor_5 = groupSyncRead.getData(ID_1,PRESENT_VELOCITY_ADDRESS,4);
   var_m->v.motor_6 = groupSyncRead.getData(ID_5,PRESENT_VELOCITY_ADDRESS,4);
@@ -449,15 +1121,51 @@ void read_vel_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamix
   var_m->v.motor_8 = groupSyncRead.getData(ID_12,PRESENT_VELOCITY_ADDRESS,4);
 }
 
+
+/**
+ * @brief Reads current load/current from all Dynamixel claw motors via GroupSyncRead.
+ */
 void read_current_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
 {
   dynamixel::GroupSyncRead groupSyncRead(portHandler, packetHandler, PRESENT_CURRENT_ADDRESS, 4);
-  groupSyncRead.addParam(ID_1);
-  groupSyncRead.addParam(ID_3);
-  groupSyncRead.addParam(ID_5);
-  groupSyncRead.addParam(ID_2);
-  groupSyncRead.addParam(ID_12);
-  groupSyncRead.txRxPacket();
+  result res_temp;
+  int rx;
+  res_temp[1] = groupSyncRead.addParam(ID_1);
+  if(res_temp[1] != 0)
+  {
+    fprintf(stderr,"Fail to read current of motor 5");
+    exit(1);
+  }
+  res_temp[0] = groupSyncRead.addParam(ID_3);
+  if(res_temp[0] != 0)
+  {
+    fprintf(stderr,"Fail to read current of motor 4");
+    exit(1);
+  }
+  res_temp[2] = groupSyncRead.addParam(ID_5);
+  if(res_temp[2] != 0)
+  {
+    fprintf(stderr,"Fail to read current of motor 6");
+    exit(1);
+  }
+  res_temp[3] = groupSyncRead.addParam(ID_2);
+  if(res_temp[3] != 0)
+  {
+    fprintf(stderr,"Fail to read current of motor 7");
+    exit(1);
+  }
+  res_temp[4] = groupSyncRead.addParam(ID_12);
+  if(res_temp[4] != 0)
+  {
+    fprintf(stderr,"Fail to read current of motor 8");
+    exit(1);
+  }
+  rx = groupSyncRead.txRxPacket();
+  if(rx == COMM_NOT_AVAILABLE)
+  {
+    fprintf(stderr,"Fail to receive the package of currents readings");
+    exit(1);
+  }
   var_m->c.motor_4 = groupSyncRead.getData(ID_3,PRESENT_CURRENT_ADDRESS,4);
   var_m->c.motor_5 = groupSyncRead.getData(ID_1,PRESENT_CURRENT_ADDRESS,4);
   var_m->c.motor_6 = groupSyncRead.getData(ID_5,PRESENT_CURRENT_ADDRESS,4);
@@ -465,6 +1173,10 @@ void read_current_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dyn
   var_m->c.motor_8 = groupSyncRead.getData(ID_12,PRESENT_CURRENT_ADDRESS,4);
 }
 
+
+/**
+ * @brief Aggregates and prints temperature data from both Rozum arm and Dynamixel claw motors.
+ */
 void Manipulator :: read_temperature()
 {
   float temperature[8];
@@ -477,11 +1189,15 @@ void Manipulator :: read_temperature()
   }
 }
 
+
+/**
+ * @brief Aggregates and prints position data from both Rozum arm and Dynamixel claw motors.
+ */
 void Manipulator :: read_position()
 {
   float position[8];
-  read_temp_arm(&arm,&var_m);
-  read_temp_claw(&var_m,portHandler,packetHandler);
+  read_pos_arm(&arm,&var_m);
+  read_pos_claw(&var_m,portHandler,packetHandler);
   fill(&var_m,position,'p');
   for (int i = 0; i < 8; i++)
   {
@@ -489,11 +1205,15 @@ void Manipulator :: read_position()
   }
 }
 
-void Manipulator :: read_temperature()
+
+/**
+ * @brief Aggregates and prints velocity data from both Rozum arm and Dynamixel claw motors.
+ */
+void Manipulator :: read_velocity()
 {
   float velocity[8];
-  read_temp_arm(&arm,&var_m);
-  read_temp_claw(&var_m,portHandler,packetHandler);
+  read_vel_arm(&arm,&var_m);
+  read_vel_claw(&var_m,portHandler,packetHandler);
   fill(&var_m,velocity,'v');
   for (int i = 0; i < 8; i++)
   {
@@ -501,11 +1221,15 @@ void Manipulator :: read_temperature()
   }
 }
 
-void Manipulator :: read_temperature()
+
+/**
+ * @brief Aggregates and prints electrical current load from both Rozum arm and Dynamixel claw motors.
+ */
+void Manipulator :: read_current()
 {
   float current[8];
-  read_temp_arm(&arm,&var_m);
-  read_temp_claw(&var_m,portHandler,packetHandler);
+  read_current_arm(&arm,&var_m);
+  read_current_claw(&var_m,portHandler,packetHandler);
   fill(&var_m,current,'c');
   for (int i = 0; i < 8; i++)
   {
