@@ -61,6 +61,7 @@ void init_motors_arm(RoboArm *arm,Var_motors *var_m)
     
     }
     // Switch all three motors to operational mode
+    float pos = 100;
     activate_motor_arm(arm->motor_1);
     activate_motor_arm(arm->motor_2);
     activate_motor_arm(arm->motor_3);
@@ -215,4 +216,214 @@ void read_vel_arm(RoboArm *arm,Var_motors *var_m)
     rr_read_parameter(arm->motor_2,APP_PARAM_VELOCITY,&var_m->v.motor_2);
     rr_read_parameter(arm->motor_3,APP_PARAM_VELOCITY,&var_m->v.motor_3);
 
+}
+
+void set_velocity_arm(RoboArm *arm,Var_motors *var_m, float vel[3], float max_position[8])
+{
+    rr_ret_status_t res_arm_1;
+    rr_ret_status_t res_arm_2;
+    rr_ret_status_t res_arm_3;
+
+    read_pos_arm(arm,var_m); // Update current position to check limits
+    
+    // --- Rozum Motors Velocity Control with Position Limits ---
+    
+    //Motor 1
+    if(max_position[0] > 0)
+    {
+      if(var_m->p.motor_1 < max_position[0])
+      {
+        res_arm_1 = rr_set_velocity_motor(arm->motor_1,0);
+      }
+      else
+      {
+        res_arm_1 = rr_set_velocity_motor(arm->motor_1,vel[0]);  
+      }
+    }
+    else if(max_position[0] < 0)
+    {
+      if(var_m->p.motor_1 > max_position[0])
+      {
+        res_arm_1 = rr_set_velocity_motor(arm->motor_1,0);
+      }
+      else
+      {
+        res_arm_1 = rr_set_velocity_motor(arm->motor_1,vel[0]);
+      }
+    }
+    else
+    {
+      res_arm_1 = rr_set_velocity_motor(arm->motor_1,vel[0]);
+    }
+    if(res_arm_1 != RET_OK)
+    {
+        fprintf(stderr,"Fail to set velocity of motor 1");
+        exit(1);
+    }
+    //Motor 2
+    if(max_position[1] > 0)
+    {
+      if(var_m->p.motor_2 >= max_position[1])
+      {
+        res_arm_2 = rr_set_velocity_motor(arm->motor_2,0);
+      }
+    }
+    else if(max_position[1] < 0)
+    {
+      if(var_m->p.motor_2 <= max_position[1])
+      {
+        res_arm_2 = rr_set_velocity_motor(arm->motor_2,0);
+      }
+    }
+    else
+    {
+      res_arm_2 = rr_set_velocity_motor(arm->motor_2,vel[1]);
+    }
+    if(res_arm_2 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 2 %d",(int)res_arm_2);
+      exit(1);
+    }
+
+    //Motor 3
+    if(max_position[2] > 0)
+    {
+      if(var_m->p.motor_3 < max_position[2])
+      {
+        res_arm_3 = rr_set_velocity_motor(arm->motor_3,0);
+      }
+      else
+      {
+        res_arm_3 = rr_set_velocity_motor(arm->motor_3,vel[2]);
+      }
+    }
+    else if(max_position[2] < 0)
+    {
+      if(var_m->p.motor_3 > max_position[2])
+      {
+        res_arm_3 = rr_set_velocity_motor(arm->motor_3,0);
+      }
+      {
+        res_arm_3 = rr_set_velocity_motor(arm->motor_3,vel[2]);
+      }
+    }
+    else
+    {
+      res_arm_3 = rr_set_velocity_motor(arm->motor_3,vel[2]);
+    }
+    if(res_arm_3 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set velocity of motor 3 %d",(int)res_arm_3);
+      exit(1);
+    }
+}
+
+void set_position_arm(RoboArm *arm,Var_motors *var_m,float pos[3],float max_position[8])
+{
+    rr_ret_status_t res_arm_1;
+    rr_ret_status_t res_arm_2;
+    rr_ret_status_t res_arm_3;
+    
+    read_pos_arm(arm,var_m);
+    // --- Rozum Motors Position Control with position limits---
+    
+    //Motor 1
+    if(max_position[0] > 0)
+    {
+        if(pos[0] > max_position[0])
+        {
+            res_arm_1 = rr_set_position(arm->motor_1,var_m->p.motor_1);
+        }
+        else
+        {
+            res_arm_1 = rr_set_position(arm->motor_1,pos[0]);  
+        }
+    }
+    else if(max_position[0] < 0)
+    {
+        if(pos[0] < max_position[0])
+        {
+            res_arm_1 = rr_set_position(arm->motor_1,var_m->p.motor_1);
+        }
+        else
+        {
+            res_arm_1 = rr_set_position(arm->motor_1,pos[0]);
+        }
+    }
+    else if(max_position[0] == 0)
+    {
+        res_arm_1 = rr_set_position(arm->motor_1,var_m->p.motor_1);
+    }
+    if(res_arm_1 != RET_OK)
+    {
+        fprintf(stderr,"Fail to set position of motor 1");
+        exit(1);
+    }
+    
+    
+    //Motor 2
+    if(max_position[1] > 0)
+    {
+        if(pos[1] > max_position[1])
+        {
+            res_arm_2 = rr_set_position(arm->motor_2,var_m->p.motor_2);
+        }
+        else
+        {
+            res_arm_2 = rr_set_position(arm->motor_2,pos[1]);
+        }
+    }
+    else if(max_position[1] < 0)
+    {
+        if(pos[1] < max_position[1])
+        {
+            res_arm_2 = rr_set_position(arm->motor_2,var_m->p.motor_2);
+        }
+        else
+        {
+            res_arm_2 = rr_set_position(arm->motor_2,pos[1]);
+        }
+    }
+    else if (max_position[1] == 0)
+    {
+        res_arm_2 = rr_set_position(arm->motor_2,var_m->p.motor_2);
+    }
+    if(res_arm_2 != RET_OK)
+    {
+        fprintf(stderr,"Fail to set position of motor 2");
+        exit(1);
+    }
+    
+    //Motor 3
+    if(max_position[2] > 0)
+    {
+        if(pos[2] < max_position[2])
+        {
+            res_arm_3 = rr_set_position(arm->motor_3,var_m->p.motor_3);
+        }
+        else
+        {
+            res_arm_3 = rr_set_position(arm->motor_3,pos[2]);  
+        }
+    }
+    else if(max_position[2] < 0)
+    {
+        if(pos[2] > max_position[2])
+        {
+            res_arm_3 = rr_set_position(arm->motor_3,var_m->p.motor_3);
+        }
+        else
+        {
+            res_arm_3 = rr_set_position(arm->motor_3,pos[2]);
+        }
+    }
+    else if(max_position[2] == 0)
+    {
+        res_arm_3 = rr_set_position(arm->motor_3,var_m->p.motor_3);
+    }
+    if(res_arm_3 != RET_OK)
+    {
+      fprintf(stderr,"Fail to set position of motor 3");
+      exit(1);
+    }
 }

@@ -390,48 +390,55 @@ void Manipulator :: get_torque_state()
     fprintf(stderr,"Fail to get torque of motor 8");
     exit(1);
   }
+  for(int i=0; i < 5; i++)
+  {
+    printf("Motor %d torque mode %d\n",i+4,(int)ids[i]);
+  }
 }
 
 
 /**
  * @brief Retrieves the hardware IDs from the Dynamixel motors.
  */
-void get_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler, uint8_t *id[5])
+void get_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler, ids_claw &id)
 {
   result res_id;
+  //id 3
+  res_id[0] =  packetHandler->read1ByteTxRx(portHandler, ID_3,7, &id[0]);
+  if(res_id[0] != 0)
+  {
+    fprintf(stderr,"Fail to get id of motor 4");
+    exit(1);
+  }
+  
   //id 1
-  res_id[1] = packetHandler->read1ByteTxRx(portHandler, ID_1, 7, id[1]);
+  res_id[1] = packetHandler->read1ByteTxRx(portHandler, ID_1, 7, &id[1]);
   if(res_id[1] != 0)
   {
-    fprintf(stderr,"Fail to get of motor 5");
+    fprintf(stderr,"Fail to get id of motor 5");
+    exit(1);
+  }
+  
+  //id 5
+  res_id[2] =  packetHandler->read1ByteTxRx(portHandler, ID_5, 7, &id[2]);
+  if(res_id[2] != 0)
+  {
+    fprintf(stderr,"Fail to get id of motor 6");
+    exit(1);
+  }
+  
+  //id 12
+  res_id[4] =  packetHandler->read1ByteTxRx(portHandler, ID_12, 7, &id[4]);
+  if(res_id[4] != 0)
+  {
+    fprintf(stderr,"Fail to get id of motor 8");
     exit(1);
   }
   //id 2
-  res_id[3] =  packetHandler->read1ByteTxRx(portHandler, ID_2, 7, id[3]);
+  res_id[3] =  packetHandler->read1ByteTxRx(portHandler, ID_2, 7, &id[3]);
   if(res_id[3] != 0)
   {
-    fprintf(stderr,"Fail to get of motor 7");
-    exit(1);
-  }
-  //id 3
-  res_id[0] =  packetHandler->read1ByteTxRx(portHandler, ID_3,7, id[0]);
-  if(res_id[0] != 0)
-  {
-    fprintf(stderr,"Fail to get of motor 4");
-    exit(1);
-  }
-  //id 5
-  res_id[2] =  packetHandler->read1ByteTxRx(portHandler, ID_5, 7, id[2]);
-  if(res_id[2] != 0)
-  {
-    fprintf(stderr,"Fail to get of motor 6");
-    exit(1);
-  }
-  //id 12
-  res_id[4] =  packetHandler->read1ByteTxRx(portHandler, ID_12, 7, id[4]);
-  if(res_id[4] != 0)
-  {
-    fprintf(stderr,"Fail to get of motor 8");
+    fprintf(stderr,"Fail to get id of motor 7");
     exit(1);
   }
 }
@@ -440,42 +447,42 @@ void get_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *p
 /**
  * @brief Writes new hardware IDs to the Dynamixel motors.
  */
-void set_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler, uint8_t id[5])
+void set_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler, ids_claw id)
 {
   result res_id;
   //id 1
   res_id[1] = packetHandler->write1ByteTxRx(portHandler, ID_1, 7, id[1]);
   if(res_id[1] != 0)
   {
-    fprintf(stderr,"Fail to get of motor 5");
+    fprintf(stderr,"Fail to set id of motor 5");
     exit(1);
   }
   //id 2
   res_id[3] = packetHandler->write1ByteTxRx(portHandler, ID_2, 7, id[3]);
   if(res_id[3] != 0)
   {
-    fprintf(stderr,"Fail to get of motor 7");
+    fprintf(stderr,"Fail to set id of motor 7");
     exit(1);
   }
   //id 3
   res_id[0] = packetHandler->write1ByteTxRx(portHandler, ID_3,7, id[0]);
   if(res_id[0] != 0)
   {
-    fprintf(stderr,"Fail to get of motor 4");
+    fprintf(stderr,"Fail to set id of motor 4");
     exit(1);
   }
   //id 5
   res_id[2] = packetHandler->write1ByteTxRx(portHandler, ID_5, 7, id[2]);
   if(res_id[2] != 0)
   {
-    fprintf(stderr,"Fail to get of motor 6");
+    fprintf(stderr,"Fail to set id of motor 6");
     exit(1);
   }
   //id 12
   res_id[4] = packetHandler->write1ByteTxRx(portHandler, ID_12, 7, id[4]);
   if(res_id[4] != 0)
   {
-    fprintf(stderr,"Fail to get of motor 8");
+    fprintf(stderr,"Fail to set id of motor 8");
     exit(1);
   }
 }
@@ -490,6 +497,12 @@ void Manipulator::init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHand
     init_motors_arm(arm,var_m); // Start position motors (Rozum)
 
     init_claw_motors(portHandler,packetHandler); // Start orientation/claw motors (Dynamixel)
+
+    for (int i = 0; i < 8; i++)
+    {
+      max_pos[i] = 0;
+    }
+    
 }
 
 
@@ -507,90 +520,19 @@ void Manipulator :: set_Velocity_raw(target_velocity vel)
     uint8_t param_goal_velocity5[4];
     uint8_t param_goal_velocity2[4];
     uint8_t param_goal_velocity12[4];
-    rr_ret_status_t res_arm_1;
-    rr_ret_status_t res_arm_2;
-    rr_ret_status_t res_arm_3;
     result res_claw;
     int tx;
     float conversion = 1/0.229;
-    read_pos_arm(&arm,&var_m); // Update current position to check limits
-    
-    // --- Rozum Motors Velocity Control with Position Limits ---
-    
-    //Motor 1
-    if(max_pos[0] > 0)
-    {
-      if(var_m.p.motor_1 >= max_pos[0])
-      {
-        res_arm_1 = rr_set_velocity_motor(arm.motor_1,0);
-      }
-    }
-    else if(max_pos[0] < 0)
-    {
-      if(var_m.p.motor_1 <= max_pos[0])
-      {
-        res_arm_1 = rr_set_velocity_motor(arm.motor_1,0);
-      }
-    }
-    else
-    {
-      res_arm_1 = rr_set_velocity_motor(arm.motor_1,vel[0]);
-    }
-    if(res_arm_1 != RET_OK)
-    {
-      fprintf(stderr,"Fail to set velocity of motor 1");
-      exit(1);
-    }
+    float vel_arm[3];
+    float max_position[3];
+    vel_arm[0] = vel[0];
+    vel_arm[1] = vel[1];
+    vel_arm[2] = vel[2];
+    max_position[0] = max_pos[0];
+    max_position[1] = max_pos[1];
+    max_position[2] = max_pos[2];
 
-    //Motor 2
-    if(max_pos[1] > 0)
-    {
-      if(var_m.p.motor_2 >= max_pos[1])
-      {
-        res_arm_2 = rr_set_velocity_motor(arm.motor_2,0);
-      }
-    }
-    else if(max_pos[1] < 0)
-    {
-      if(var_m.p.motor_2 <= max_pos[1])
-      {
-        res_arm_2 = rr_set_velocity_motor(arm.motor_2,0);
-      }
-    }
-    else
-    {
-      res_arm_2 = rr_set_velocity_motor(arm.motor_2,vel[1]);
-    }
-    if(res_arm_2 != RET_OK)
-    {
-      fprintf(stderr,"Fail to set velocity of motor 2");
-      exit(1);
-    }
-
-    //Motor 3
-    if(max_pos[3] > 0)
-    {
-      if(var_m.p.motor_3 >= max_pos[2])
-      {
-        res_arm_3 = rr_set_velocity_motor(arm.motor_3,0);
-      }
-    }
-    else if(max_pos[2] < 0)
-    {
-      if(var_m.p.motor_3 <= max_pos[2])
-      {
-        res_arm_3 = rr_set_velocity_motor(arm.motor_3,0);
-      }
-    }
-    else
-    {
-      res_arm_3 = rr_set_velocity_motor(arm.motor_3,vel[2]);
-    }
-    if(res_arm_3 != RET_OK)
-    {
-      fprintf(stderr,"Fail to set velocity of motor 3");
-      exit(1);
-    }
+    set_velocity_arm(&arm,&var_m,vel_arm,max_position);
 
     // --- Dynamixel Motors GroupSyncWrite Preparation ---
     // Splitting velocity values into 4-byte arrays
@@ -610,42 +552,42 @@ void Manipulator :: set_Velocity_raw(target_velocity vel)
     param_goal_velocity5[3] = DXL_HIBYTE(DXL_HIWORD(vel[5]));
 
 
-    param_goal_velocity2[0] = DXL_LOBYTE(DXL_LOWORD(vel[2]));
-    param_goal_velocity2[1] = DXL_HIBYTE(DXL_LOWORD(vel[2]));
-    param_goal_velocity2[2] = DXL_LOBYTE(DXL_HIWORD(vel[2]));
-    param_goal_velocity2[3] = DXL_HIBYTE(DXL_HIWORD(vel[2]));
+    param_goal_velocity2[0] = DXL_LOBYTE(DXL_LOWORD(vel[6]));
+    param_goal_velocity2[1] = DXL_HIBYTE(DXL_LOWORD(vel[6]));
+    param_goal_velocity2[2] = DXL_LOBYTE(DXL_HIWORD(vel[6]));
+    param_goal_velocity2[3] = DXL_HIBYTE(DXL_HIWORD(vel[6]));
     
-    param_goal_velocity12[0] = DXL_LOBYTE(DXL_LOWORD(vel[12]));
-    param_goal_velocity12[1] = DXL_HIBYTE(DXL_LOWORD(vel[12]));
-    param_goal_velocity12[2] = DXL_LOBYTE(DXL_HIWORD(vel[12]));
-    param_goal_velocity12[3] = DXL_HIBYTE(DXL_HIWORD(vel[12]));
+    param_goal_velocity12[0] = DXL_LOBYTE(DXL_LOWORD(vel[7]));
+    param_goal_velocity12[1] = DXL_HIBYTE(DXL_LOWORD(vel[7]));
+    param_goal_velocity12[2] = DXL_LOBYTE(DXL_HIWORD(vel[7]));
+    param_goal_velocity12[3] = DXL_HIBYTE(DXL_HIWORD(vel[7]));
     
     res_claw[1] = groupSyncWrite.addParam(ID_1, param_goal_velocity1);
-    if(res_claw[1] != 0)
+    if(res_claw[1] == 0)
     {
       fprintf(stderr,"Fail to set velocity of motor 5");
       exit(1);
     }
     res_claw[0] = groupSyncWrite.addParam(ID_3, param_goal_velocity3);
-    if(res_claw[0] != 0)
+    if(res_claw[0] == 0)
     {
       fprintf(stderr,"Fail to set velocity of motor 4");
       exit(1);
     }
     res_claw[2] = groupSyncWrite.addParam(ID_5, param_goal_velocity5);
-    if(res_claw[2] != 0)
+    if(res_claw[2] == 0)
     {
       fprintf(stderr,"Fail to set velocity of motor 6");
       exit(1);
     }
     res_claw[3] = groupSyncWrite.addParam(ID_2, param_goal_velocity2);
-    if(res_claw[3] != 0)
+    if(res_claw[3] == 0)
     {
       fprintf(stderr,"Fail to set velocity of motor 7");
       exit(1);
     }
     res_claw[4] = groupSyncWrite.addParam(ID_12, param_goal_velocity12);
-    if(res_claw[4] != 0)
+    if(res_claw[4] == 0)
     {
       fprintf(stderr,"Fail to set velocity of motor 8");
       exit(1);
@@ -660,6 +602,59 @@ void Manipulator :: set_Velocity_raw(target_velocity vel)
 }
 
 /**
+ * @brief Reads current position from all Dynamixel claw motors via GroupSyncRead.
+ */
+void read_pos_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
+{
+  dynamixel::GroupSyncRead groupSyncRead(portHandler, packetHandler, PRESENT_POSITION_ADDRESS, 4);
+  result res_temp;
+  float conversion = 0.087891;
+  int rx;
+  res_temp[1] = groupSyncRead.addParam(ID_1);
+  if(res_temp[1] == 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 5");
+    exit(1);
+  }
+  res_temp[0] = groupSyncRead.addParam(ID_3);
+  if(res_temp[0] == 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 4");
+    exit(1);
+  }
+  res_temp[2] = groupSyncRead.addParam(ID_5);
+  if(res_temp[2] == 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 6");
+    exit(1);
+  }
+  res_temp[3] = groupSyncRead.addParam(ID_2);
+  if(res_temp[3] == 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 7");
+    exit(1);
+  }
+  res_temp[4] = groupSyncRead.addParam(ID_12);
+  if(res_temp[4] == 0)
+  {
+    fprintf(stderr,"Fail to read position of motor 8");
+    exit(1);
+  }
+  rx = groupSyncRead.txRxPacket();
+  if(rx == COMM_NOT_AVAILABLE)
+  {
+    fprintf(stderr,"Fail to receive the package of positions readings");
+    exit(1);
+  }
+  var_m->p.motor_4 = (int32_t)groupSyncRead.getData(ID_3,PRESENT_POSITION_ADDRESS,4)*conversion;
+  var_m->p.motor_5 = (int32_t)groupSyncRead.getData(ID_1,PRESENT_POSITION_ADDRESS,4)*conversion;
+  var_m->p.motor_6 = (int32_t)groupSyncRead.getData(ID_5,PRESENT_POSITION_ADDRESS,4)*conversion;
+  var_m->p.motor_7 = (int32_t)groupSyncRead.getData(ID_2,PRESENT_POSITION_ADDRESS,4)*conversion;
+  var_m->p.motor_8 = (int32_t)groupSyncRead.getData(ID_12,PRESENT_POSITION_ADDRESS,4)*conversion;
+}
+
+
+/**
  * @brief Commands absolute positions to the entire manipulator.
  * Includes clamping for the Rozum arm motors to prevent exceeding physical limits.
  * Uses GroupSyncWrite for Dynamixel position commands.
@@ -667,90 +662,27 @@ void Manipulator :: set_Velocity_raw(target_velocity vel)
  */
 void Manipulator :: set_Position_raw(target_position pos)
 {
-    rr_ret_status_t res_arm_1;
-    rr_ret_status_t res_arm_2;
-    rr_ret_status_t res_arm_3;
     result res_claw;
+    float pos_max[5];
+    float pos_max_arm[3];
+    float pos_arm[3];
     int tx;
-    read_pos_arm(&arm,&var_m);
-    // --- Rozum Motors Position Control with position limits---
-
-    //Motor 1
-    if(max_pos[0] > 0)
+    read_pos_claw(&var_m,portHandler,packetHandler);
+    fill(&var_m,pos_max,'p');
+    for (int i = 0; i < 5; i++)
     {
-      if(pos[0] >= max_pos[0])
+      if(max_pos[i+3] == 0)
       {
-        res_arm_1 = rr_set_position(arm.motor_1,var_m.p.motor_1);
+        pos[i+3] = pos_max[i];
       }
     }
-    else if(max_pos[0] < 0)
-    {
-      if(pos[0] <= max_pos[0])
-      {
-        res_arm_1 = rr_set_position(arm.motor_1,var_m.p.motor_1);
-      }
-    }
-    else
-    {
-      res_arm_1 = rr_set_position(arm.motor_1,pos[0]);
-    }
-    if(res_arm_1 != RET_OK)
-    {
-      fprintf(stderr,"Fail to set position of motor 1");
-      exit(1);
-    }
-    
-    
-    //Motor 2
-    if(max_pos[1] > 0)
-    {
-      if(pos[1] >= max_pos[1])
-      {
-        res_arm_2 = rr_set_position(arm.motor_2,var_m.p.motor_2);
-      }
-    }
-    else if(max_pos[1] < 0)
-    {
-      if(pos[1] <= max_pos[1])
-      {
-        res_arm_2 = rr_set_position(arm.motor_2,var_m.p.motor_2);
-      }
-    }
-    else
-    {
-      res_arm_2 = rr_set_position(arm.motor_2,pos[1]);
-    }
-    if(res_arm_2 != RET_OK)
-    {
-      fprintf(stderr,"Fail to set position of motor 2");
-      exit(1);
-    }
-    
-    //Motor 3
-    if(max_pos[2] > 0)
-    {
-      if(pos[2] >= max_pos[2])
-      {
-        res_arm_3 = rr_set_position(arm.motor_3,var_m.p.motor_3);
-      }
-    }
-    else if(max_pos[2] < 0)
-    {
-      if(pos[2] <= max_pos[2])
-      {
-        res_arm_3 = rr_set_position(arm.motor_3,var_m.p.motor_3);
-      }
-    }
-    else
-    {
-      res_arm_3 = rr_set_position(arm.motor_3,pos[2]);
-    }
-    if(res_arm_3 != RET_OK)
-    {
-      fprintf(stderr,"Fail to set position of motor 3");
-      exit(1);
-    }
-
+    pos_arm[0] = pos[0];
+    pos_max_arm[0] = max_pos[0];
+    pos_arm[1] = pos[1];
+    pos_max_arm[1] = max_pos[1];
+    pos_arm[2] = pos[2];
+    pos_max_arm[2] = max_pos[2];
+    set_position_arm(&arm,&var_m,pos_arm,pos_max_arm);
 
     dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, GOAL_POSITION_ADDRESS, 4);
     uint8_t param_goal_pos1[4];
@@ -778,42 +710,42 @@ void Manipulator :: set_Position_raw(target_position pos)
     param_goal_pos5[3] = DXL_HIBYTE(DXL_HIWORD(pos[5]));
 
 
-    param_goal_pos2[0] = DXL_LOBYTE(DXL_LOWORD(pos[2]));
-    param_goal_pos2[1] = DXL_HIBYTE(DXL_LOWORD(pos[2]));
-    param_goal_pos2[2] = DXL_LOBYTE(DXL_HIWORD(pos[2]));
-    param_goal_pos2[3] = DXL_HIBYTE(DXL_HIWORD(pos[2]));
+    param_goal_pos2[0] = DXL_LOBYTE(DXL_LOWORD(pos[6]));
+    param_goal_pos2[1] = DXL_HIBYTE(DXL_LOWORD(pos[6]));
+    param_goal_pos2[2] = DXL_LOBYTE(DXL_HIWORD(pos[6]));
+    param_goal_pos2[3] = DXL_HIBYTE(DXL_HIWORD(pos[6]));
     
-    param_goal_pos12[0] = DXL_LOBYTE(DXL_LOWORD(pos[12]));
-    param_goal_pos12[1] = DXL_HIBYTE(DXL_LOWORD(pos[12]));
-    param_goal_pos12[2] = DXL_LOBYTE(DXL_HIWORD(pos[12]));
-    param_goal_pos12[3] = DXL_HIBYTE(DXL_HIWORD(pos[12]));
+    param_goal_pos12[0] = DXL_LOBYTE(DXL_LOWORD(pos[7]));
+    param_goal_pos12[1] = DXL_HIBYTE(DXL_LOWORD(pos[7]));
+    param_goal_pos12[2] = DXL_LOBYTE(DXL_HIWORD(pos[7]));
+    param_goal_pos12[3] = DXL_HIBYTE(DXL_HIWORD(pos[7]));
     
     res_claw[1] = groupSyncWrite.addParam(ID_1, param_goal_pos1);
-    if(res_claw[1] != 0)
+    if(res_claw[1] == 0)
     {
       fprintf(stderr,"Fail to set position of motor 5");
       exit(1);
     }
     res_claw[0] = groupSyncWrite.addParam(ID_3, param_goal_pos3);
-    if(res_claw[0] != 0)
+    if(res_claw[0] == 0)
     {
       fprintf(stderr,"Fail to set position of motor 4");
       exit(1);
     }
     res_claw[2] = groupSyncWrite.addParam(ID_5, param_goal_pos5);
-    if(res_claw[2] != 0)
+    if(res_claw[2] == 0)
     {
       fprintf(stderr,"Fail to set position of motor 6");
       exit(1);
     }
     res_claw[3] = groupSyncWrite.addParam(ID_2, param_goal_pos2);
-    if(res_claw[3] != 0)
+    if(res_claw[3] == 0)
     {
       fprintf(stderr,"Fail to set position of motor 7");
       exit(1);
     }
     res_claw[4] = groupSyncWrite.addParam(ID_12, param_goal_pos12);
-    if(res_claw[4] != 0)
+    if(res_claw[4] == 0)
     {
       fprintf(stderr,"Fail to set position of motor 8");
       exit(1);
@@ -923,22 +855,19 @@ void Manipulator::set_Mode(char mode)
 /**
  * @brief Consolidates hardware IDs from both the Rozum arm and Dynamixel claw into a single array.
  */
-void Manipulator:: getIDS(uint8_t *ids[8])
+void Manipulator:: getIDS(int ids[8])
 {
-  uint8_t *id_arm[3];
-  uint8_t *id_claw[5];
-  get_motors_arm_id(&arm,(int *)id_arm);
+  int id_arm[3];
+  ids_claw id_claw;
+  get_motors_arm_id(&arm,id_arm);
   get_id_claw(portHandler,packetHandler,id_claw);
-  for (int i = 0; i < 8; i++)
+  for (int i = 0; i < 3; i++)
   {
-    if(i < 3)
-    {
-      ids[i] = (uint8_t*)id_arm[i];
-    }
-    else
-    {
-      ids[i] = id_claw[i-3];
-    }
+    ids[i] = id_arm[i];
+  }
+  for (int i = 0; i < 5; i++)
+  {
+    ids[i+3] = (int )id_claw[i];
   }
 }
 
@@ -946,23 +875,23 @@ void Manipulator:: getIDS(uint8_t *ids[8])
 /**
  * @brief Sets hardware IDs for both the Rozum arm and Dynamixel claw from a single array.
  */
-void Manipulator:: setIDS(uint8_t ids[8])
+void Manipulator:: setIDS(int ids[8])
 {
   int id_arm[3];
-  uint8_t id_claw[5];
+  ids_claw id_claw;
   for (int i = 0; i < 8; i++)
   {
     if(i < 3)
     {
-      ids[i] = (uint8_t)id_arm[i];
+      id_arm[i] = ids[i];
     }
     else
     {
-      ids[i] = id_claw[i-3];
+      id_claw[i-3] = ids[i] ;
     }
   }
   set_motors_arm_id(&arm,id_arm);
-  set_id_claw(portHandler,packetHandler,id_claw);
+  set_id_claw(portHandler,packetHandler,id_claw);  
 }
 
 
@@ -975,31 +904,31 @@ void read_temp_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynami
   result res_temp;
   int rx;
   res_temp[1] = groupSyncRead.addParam(ID_1);
-  if(res_temp[1] != 0)
+  if(res_temp[1] == 0)
   {
     fprintf(stderr,"Fail to read temperature of motor 5");
     exit(1);
   }
   res_temp[0] = groupSyncRead.addParam(ID_3);
-  if(res_temp[0] != 0)
+  if(res_temp[0] == 0)
   {
     fprintf(stderr,"Fail to read temperature of motor 4");
     exit(1);
   }
   res_temp[2] = groupSyncRead.addParam(ID_5);
-  if(res_temp[2] != 0)
+  if(res_temp[2] == 0)
   {
     fprintf(stderr,"Fail to read temperature of motor 6");
     exit(1);
   }
   res_temp[3] = groupSyncRead.addParam(ID_2);
-  if(res_temp[3] != 0)
+  if(res_temp[3] == 0)
   {
     fprintf(stderr,"Fail to read temperature of motor 7");
     exit(1);
   }
   res_temp[4] = groupSyncRead.addParam(ID_12);
-  if(res_temp[4] != 0)
+  if(res_temp[4] == 0)
   {
     fprintf(stderr,"Fail to read temperature of motor 8");
     exit(1);
@@ -1013,61 +942,10 @@ void read_temp_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynami
   var_m->t.motor_4 = groupSyncRead.getData(ID_3,PRESENT_TEMPERATURE_ADDRESS,4);
   var_m->t.motor_5 = groupSyncRead.getData(ID_1,PRESENT_TEMPERATURE_ADDRESS,4);
   var_m->t.motor_6 = groupSyncRead.getData(ID_5,PRESENT_TEMPERATURE_ADDRESS,4);
-  var_m->t.motor_7 = groupSyncRead.getData(ID_2,PRESENT_TEMPERATURE_ADDRESS,4);
-  var_m->t.motor_8 = groupSyncRead.getData(ID_12,PRESENT_TEMPERATURE_ADDRESS,4);
+  var_m->t.motor_7 = groupSyncRead.getData(ID_2,PRESENT_TEMPERATURE_ADDRESS,4)/10000000;
+  var_m->t.motor_8 = groupSyncRead.getData(ID_12,PRESENT_TEMPERATURE_ADDRESS,4)/10000000;
 }
 
-
-/**
- * @brief Reads current position from all Dynamixel claw motors via GroupSyncRead.
- */
-void read_pos_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
-{
-  dynamixel::GroupSyncRead groupSyncRead(portHandler, packetHandler, PRESENT_POSITION_ADDRESS, 4);
-  result res_temp;
-  int rx;
-  res_temp[1] = groupSyncRead.addParam(ID_1);
-  if(res_temp[1] != 0)
-  {
-    fprintf(stderr,"Fail to read position of motor 5");
-    exit(1);
-  }
-  res_temp[0] = groupSyncRead.addParam(ID_3);
-  if(res_temp[0] != 0)
-  {
-    fprintf(stderr,"Fail to read position of motor 4");
-    exit(1);
-  }
-  res_temp[2] = groupSyncRead.addParam(ID_5);
-  if(res_temp[2] != 0)
-  {
-    fprintf(stderr,"Fail to read position of motor 6");
-    exit(1);
-  }
-  res_temp[3] = groupSyncRead.addParam(ID_2);
-  if(res_temp[3] != 0)
-  {
-    fprintf(stderr,"Fail to read position of motor 7");
-    exit(1);
-  }
-  res_temp[4] = groupSyncRead.addParam(ID_12);
-  if(res_temp[4] != 0)
-  {
-    fprintf(stderr,"Fail to read position of motor 8");
-    exit(1);
-  }
-  rx = groupSyncRead.txRxPacket();
-  if(rx == COMM_NOT_AVAILABLE)
-  {
-    fprintf(stderr,"Fail to receive the package of positions readings");
-    exit(1);
-  }
-  var_m->p.motor_4 = groupSyncRead.getData(ID_3,PRESENT_POSITION_ADDRESS,4);
-  var_m->p.motor_5 = groupSyncRead.getData(ID_1,PRESENT_POSITION_ADDRESS,4);
-  var_m->p.motor_6 = groupSyncRead.getData(ID_5,PRESENT_POSITION_ADDRESS,4);
-  var_m->p.motor_7 = groupSyncRead.getData(ID_2,PRESENT_POSITION_ADDRESS,4);
-  var_m->p.motor_8 = groupSyncRead.getData(ID_12,PRESENT_POSITION_ADDRESS,4);
-}
 
 
 /**
@@ -1079,31 +957,31 @@ void read_vel_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamix
   result res_temp;
   int rx;
   res_temp[1] = groupSyncRead.addParam(ID_1);
-  if(res_temp[1] != 0)
+  if(res_temp[1] == 0)
   {
     fprintf(stderr,"Fail to read velocity of motor 5");
     exit(1);
   }
   res_temp[0] = groupSyncRead.addParam(ID_3);
-  if(res_temp[0] != 0)
+  if(res_temp[0] == 0)
   {
     fprintf(stderr,"Fail to read velocity of motor 4");
     exit(1);
   }
   res_temp[2] = groupSyncRead.addParam(ID_5);
-  if(res_temp[2] != 0)
+  if(res_temp[2] == 0)
   {
     fprintf(stderr,"Fail to read velocity of motor 6");
     exit(1);
   }
   res_temp[3] = groupSyncRead.addParam(ID_2);
-  if(res_temp[3] != 0)
+  if(res_temp[3] == 0)
   {
     fprintf(stderr,"Fail to read velocity of motor 7");
     exit(1);
   }
   res_temp[4] = groupSyncRead.addParam(ID_12);
-  if(res_temp[4] != 0)
+  if(res_temp[4] == 0)
   {
     fprintf(stderr,"Fail to read velocity of motor 8");
     exit(1);
@@ -1131,31 +1009,31 @@ void read_current_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dyn
   result res_temp;
   int rx;
   res_temp[1] = groupSyncRead.addParam(ID_1);
-  if(res_temp[1] != 0)
+  if(res_temp[1] == 0)
   {
     fprintf(stderr,"Fail to read current of motor 5");
     exit(1);
   }
   res_temp[0] = groupSyncRead.addParam(ID_3);
-  if(res_temp[0] != 0)
+  if(res_temp[0] == 0)
   {
     fprintf(stderr,"Fail to read current of motor 4");
     exit(1);
   }
   res_temp[2] = groupSyncRead.addParam(ID_5);
-  if(res_temp[2] != 0)
+  if(res_temp[2] == 0)
   {
     fprintf(stderr,"Fail to read current of motor 6");
     exit(1);
   }
   res_temp[3] = groupSyncRead.addParam(ID_2);
-  if(res_temp[3] != 0)
+  if(res_temp[3] == 0)
   {
     fprintf(stderr,"Fail to read current of motor 7");
     exit(1);
   }
   res_temp[4] = groupSyncRead.addParam(ID_12);
-  if(res_temp[4] != 0)
+  if(res_temp[4] == 0)
   {
     fprintf(stderr,"Fail to read current of motor 8");
     exit(1);
@@ -1185,7 +1063,7 @@ void Manipulator :: read_temperature()
   fill(&var_m,temperature,'t');
   for (int i = 0; i < 8; i++)
   {
-    printf("Motor %d Temperature: %f °C",i,temperature[i]);
+    printf("Motor %d Temperature: %f °C\n",i,temperature[i]);
   }
 }
 
@@ -1201,7 +1079,7 @@ void Manipulator :: read_position()
   fill(&var_m,position,'p');
   for (int i = 0; i < 8; i++)
   {
-    printf("Motor %d Position: %f °",i,position[i]);
+    printf("Motor %d Position: %f °\n",i,position[i]);
   }
 }
 
@@ -1217,7 +1095,7 @@ void Manipulator :: read_velocity()
   fill(&var_m,velocity,'v');
   for (int i = 0; i < 8; i++)
   {
-    printf("Motor %d Velocity: %f m/s",i,velocity[i]);
+    printf("Motor %d Velocity: %f m/s\n",i,velocity[i]);
   }
 }
 
@@ -1233,6 +1111,6 @@ void Manipulator :: read_current()
   fill(&var_m,current,'c');
   for (int i = 0; i < 8; i++)
   {
-    printf("Motor %d Current: %f mA",i,current[i]);
+    printf("Motor %d Current: %f mA\n",i,current[i]);
   }
 }

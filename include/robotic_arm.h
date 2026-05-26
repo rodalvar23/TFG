@@ -124,12 +124,14 @@ typedef std::array <float,8> max_velocity;
 typedef std::array <float,8> target_position;
 typedef std::array <float,8> max_position;
 typedef std::array <int,5> result;
+typedef std::array  <uint8_t,5> ids_claw;
 
 class Manipulator
 {   
     //Variables publicas
     public:
         RoboArm arm;
+        RoboArm *arm_ready;
         Var_motors var_m;
         dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler("/dev/u2d2_dyn"); // your dxl port name;
         dynamixel::PacketHandler *packetHandler  = dynamixel::PacketHandler::getPacketHandler(2.0); //protocol version;
@@ -150,8 +152,8 @@ class Manipulator
         void set_Velocity_raw(max_velocity vel);
         void set_Position_raw(target_position pos);
         void set_Mode(char mode);
-        void getIDS(uint8_t *ids[8]);
-        void setIDS(uint8_t ids[8]);
+        void getIDS(int ids[8]);
+        void setIDS(int ids[8]);
         void set_torque_state(bool state);
         void get_torque_state();
         void full_manual_mode();
@@ -159,6 +161,8 @@ class Manipulator
         void read_velocity();
         void read_position();
         void read_current();
+        void init();
+        void deinit();
 
   };
 
@@ -180,6 +184,8 @@ extern "C"{
     void read_current_arm(RoboArm *arm,Var_motors *var_m);
     void read_temp_arm(RoboArm *arm,Var_motors *var_m);
     void read_pos_arm(RoboArm *arm,Var_motors *var_m);
+    void set_velocity_arm(RoboArm *arm,Var_motors *var_m, float vel[3], float max_position[8]);
+    void set_position_arm(RoboArm *arm,Var_motors *var_m,float pos[3],float max_position[8]);
 
 #ifdef __cplusplus
 }
