@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/mi_programa.dir/test/main_tester.cpp.o -o mi_programa   -L"/home/rodrigo/Documentos/TFG/Codigo/RoboticArm C++/include/Rozum-Servo-Drives-API/c/build"  -Wl,-rpath,"/home/rodrigo/Documentos/TFG/Codigo/RoboticArm C++/include/Rozum-Servo-Drives-API/c/build" libmifunciones.a -lservo_api 

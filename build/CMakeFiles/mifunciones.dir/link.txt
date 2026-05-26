@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmifunciones.a CMakeFiles/mifunciones.dir/src/ft_init_motors.c.o CMakeFiles/mifunciones.dir/src/ft_manual_mode.c.o CMakeFiles/mifunciones.dir/src/ft_move.c.o CMakeFiles/mifunciones.dir/src/ft_timer.c.o
-/usr/bin/ranlib libmifunciones.a
