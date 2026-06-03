@@ -7,7 +7,7 @@
  * @param vec Output array to store the requested data.
  * @param select Char indicating the data type: 'v' (velocity), 'p' (position), 't' (temperature), 'c' (current).
  */
-void fill(Var_motors *var, float vec[8], char select)
+void fill(Var_motors *var, vec_motors vec, char select)
 {
   switch (select)
   {
@@ -63,7 +63,7 @@ void fill(Var_motors *var, float vec[8], char select)
  * Rozum arm motors (0-2) and Dynamixel claw motors (3-7).
  * @param vel_max Array containing the target maximum velocities for the 8 motors.
  */
-void Manipulator :: set_max_Velocity(max_velocity vel_max)
+void Manipulator :: set_max_Velocity(vec_motors vel_max)
 {
   result res_claw;
   rr_ret_status_t res_arm_1;
@@ -159,7 +159,7 @@ void Manipulator :: set_max_Velocity(max_velocity vel_max)
  * @brief Sets the maximum allowable position limits for the Dynamixel claw motors.
  * @param pos_max Array containing the target maximum positions.
  */
-void Manipulator :: set_max_Position(max_position pos_max)
+void Manipulator :: set_max_Position(vec_motors pos_max)
 {
   result res_claw;
   float conversion = 1/0.088;
@@ -512,7 +512,7 @@ void Manipulator::init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHand
  * Uses GroupSyncWrite for simultaneous command execution on Dynamixel motors.
  * @param vel Target velocity array for all 8 motors.
  */
-void Manipulator :: set_Velocity_raw(target_velocity vel)
+void Manipulator :: set_Velocity_raw(vec_motors vel)
 {
     dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, GOAL_VELOCITY_ADDRESS, 4);
     uint8_t param_goal_velocity1[4];
@@ -660,10 +660,10 @@ void read_pos_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamix
  * Uses GroupSyncWrite for Dynamixel position commands.
  * @param pos Target position array for all 8 motors.
  */
-void Manipulator :: set_Position_raw(target_position pos)
+void Manipulator :: set_Position_raw(vec_motors pos)
 {
     result res_claw;
-    float pos_max[5];
+    vec_motors pos_max;
     float pos_max_arm[3];
     float pos_arm[3];
     int tx;
@@ -1057,7 +1057,7 @@ void read_current_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dyn
  */
 void Manipulator :: read_temperature()
 {
-  float temperature[8];
+  vec_motors temperature;
   read_temp_arm(&arm,&var_m);
   read_temp_claw(&var_m,portHandler,packetHandler);
   fill(&var_m,temperature,'t');
@@ -1073,7 +1073,7 @@ void Manipulator :: read_temperature()
  */
 void Manipulator :: read_position()
 {
-  float position[8];
+  vec_motors position;
   read_pos_arm(&arm,&var_m);
   read_pos_claw(&var_m,portHandler,packetHandler);
   fill(&var_m,position,'p');
@@ -1089,7 +1089,7 @@ void Manipulator :: read_position()
  */
 void Manipulator :: read_velocity()
 {
-  float velocity[8];
+  vec_motors velocity;
   read_vel_arm(&arm,&var_m);
   read_vel_claw(&var_m,portHandler,packetHandler);
   fill(&var_m,velocity,'v');
@@ -1105,7 +1105,7 @@ void Manipulator :: read_velocity()
  */
 void Manipulator :: read_current()
 {
-  float current[8];
+  vec_motors current;
   read_current_arm(&arm,&var_m);
   read_current_claw(&var_m,portHandler,packetHandler);
   fill(&var_m,current,'c');

@@ -119,10 +119,7 @@ typedef struct
 #include <array>
 
 
-typedef std::array <float,8> target_velocity;
-typedef std::array <float,8> max_velocity;
-typedef std::array <float,8> target_position;
-typedef std::array <float,8> max_position;
+typedef std::array <float,8> vec_motors;
 typedef std::array <int,5> result;
 typedef std::array  <uint8_t,5> ids_claw;
 
@@ -131,11 +128,10 @@ class Manipulator
     //Variables publicas
     public:
         RoboArm arm;
-        RoboArm *arm_ready;
         Var_motors var_m;
         dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler("/dev/u2d2_dyn"); // your dxl port name;
         dynamixel::PacketHandler *packetHandler  = dynamixel::PacketHandler::getPacketHandler(2.0); //protocol version;
-        max_position max_pos;
+        vec_motors max_pos;
         
         public:
         //Constructor
@@ -147,10 +143,10 @@ class Manipulator
         }
         //Funciones
         void init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler);
-        void set_max_Velocity(max_velocity vel_max);
-        void set_max_Position(max_position pos_max);
-        void set_Velocity_raw(max_velocity vel);
-        void set_Position_raw(target_position pos);
+        void set_max_Velocity(vec_motors vel_max);
+        void set_max_Position(vec_motors pos_max);
+        void set_Velocity_raw(vec_motors vel);
+        void set_Position_raw(vec_motors pos);
         void set_Mode(char mode);
         void getIDS(int ids[8]);
         void setIDS(int ids[8]);
