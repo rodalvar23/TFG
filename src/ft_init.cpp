@@ -31,4 +31,7 @@ void Manipulator :: deinit()
 {
     finish_motors_arm(&arm);
     finish_motors_claw(portHandler,packetHandler);
+
+    cv_iniciar_tarea_.notify_one();
+    if(hilo_dynamixel.joinable()) hilo_dynamixel.join();
 }

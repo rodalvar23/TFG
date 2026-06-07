@@ -1,6 +1,12 @@
 #include "../include/robotic_arm.h"
 
 
+
+
+
+
+
+
 /**
  * @brief Populates a float array with specific motor data based on the selected mode.
  * @param var Pointer to the structure containing all motor variables.
@@ -488,22 +494,7 @@ void set_id_claw(dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *p
 }
 
 
-/**
- * @brief Master initialization function for the entire manipulator.
- * Boots up the Rozum base arm motors first, followed by the Dynamixel claw motors.
- */
-void Manipulator::init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
-{ 
-    init_motors_arm(arm,var_m); // Start position motors (Rozum)
 
-    init_claw_motors(portHandler,packetHandler); // Start orientation/claw motors (Dynamixel)
-
-    for (int i = 0; i < 8; i++)
-    {
-      max_pos[i] = 0;
-    }
-    
-}
 
 
 /**
@@ -512,7 +503,7 @@ void Manipulator::init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHand
  * Uses GroupSyncWrite for simultaneous command execution on Dynamixel motors.
  * @param vel Target velocity array for all 8 motors.
  */
-void Manipulator :: set_Velocity_raw(vec_motors vel)
+void Manipulator :: set_velocity_claw()
 {
     dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, GOAL_VELOCITY_ADDRESS, 4);
     uint8_t param_goal_velocity1[4];
@@ -523,16 +514,7 @@ void Manipulator :: set_Velocity_raw(vec_motors vel)
     result res_claw;
     int tx;
     float conversion = 1/0.229;
-    float vel_arm[3];
-    float max_position[3];
-    vel_arm[0] = vel[0];
-    vel_arm[1] = vel[1];
-    vel_arm[2] = vel[2];
-    max_position[0] = max_pos[0];
-    max_position[1] = max_pos[1];
-    max_position[2] = max_pos[2];
-
-    set_velocity_arm(&arm,&var_m,vel_arm,max_position);
+    
 
     // --- Dynamixel Motors GroupSyncWrite Preparation ---
     // Splitting velocity values into 4-byte arrays
@@ -601,6 +583,30 @@ void Manipulator :: set_Velocity_raw(vec_motors vel)
     groupSyncWrite.clearParam();
 }
 
+
+void Manipulator :: set_velocity_raw()
+{
+    float vel_arm[3];
+    float max_position[3];
+    vel_arm[0] = vel[0];
+    vel_arm[1] = vel[1];
+    vel_arm[2] = vel[2];
+    max_position[0] = max_pos[0];
+    max_position[1] = max_pos[1];
+    max_position[2] = max_pos[2];
+  {
+        std::lock_guard<std::mutex> lock(mtx_sincronizacion);
+        comando_actual_ = tarea_dynamixel:: SEND_VELOCITY;
+        tarea_completada_ = false;
+  }
+  cv_iniciar_tarea_.notify_one();
+  set_velocity_arm(&arm,&var_m,vel_arm,max_position);
+  {
+        std::unique_lock<std::mutex> lock(mtx_sincronizacion);
+        cv_tarea_terminada_.wait(lock, [this]{ return tarea_completada_; });
+  }
+}
+
 /**
  * @brief Reads current position from all Dynamixel claw motors via GroupSyncRead.
  */
@@ -660,12 +666,10 @@ void read_pos_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamix
  * Uses GroupSyncWrite for Dynamixel position commands.
  * @param pos Target position array for all 8 motors.
  */
-void Manipulator :: set_Position_raw(vec_motors pos)
+void Manipulator :: set_position_claw()
 {
     result res_claw;
     vec_motors pos_max;
-    float pos_max_arm[3];
-    float pos_arm[3];
     int tx;
     read_pos_claw(&var_m,portHandler,packetHandler);
     fill(&var_m,pos_max,'p');
@@ -676,13 +680,6 @@ void Manipulator :: set_Position_raw(vec_motors pos)
         pos[i+3] = pos_max[i];
       }
     }
-    pos_arm[0] = pos[0];
-    pos_max_arm[0] = max_pos[0];
-    pos_arm[1] = pos[1];
-    pos_max_arm[1] = max_pos[1];
-    pos_arm[2] = pos[2];
-    pos_max_arm[2] = max_pos[2];
-    set_position_arm(&arm,&var_m,pos_arm,pos_max_arm);
 
     dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, GOAL_POSITION_ADDRESS, 4);
     uint8_t param_goal_pos1[4];
@@ -757,6 +754,31 @@ void Manipulator :: set_Position_raw(vec_motors pos)
       exit(1);
     }
     groupSyncWrite.clearParam();
+}
+
+
+void Manipulator :: set_position_raw()
+{
+  float pos_max_arm[3];
+  float pos_arm[3];
+  pos_arm[0] = pos[0];
+  pos_max_arm[0] = max_pos[0];
+  pos_arm[1] = pos[1];
+  pos_max_arm[1] = max_pos[1];
+  pos_arm[2] = pos[2];
+  pos_max_arm[2] = max_pos[2];
+
+  {
+        std::lock_guard<std::mutex> lock(mtx_sincronizacion);
+        comando_actual_ = tarea_dynamixel:: SEND_POSITION;
+        tarea_completada_ = false;
+  }
+  cv_iniciar_tarea_.notify_one();
+  set_position_arm(&arm,&var_m,pos_arm,pos_max_arm);
+  {
+        std::unique_lock<std::mutex> lock(mtx_sincronizacion);
+        cv_tarea_terminada_.wait(lock, [this]{ return tarea_completada_; });
+  }
 }
 
 
@@ -1058,8 +1080,19 @@ void read_current_claw(Var_motors *var_m,dynamixel::PortHandler *portHandler,dyn
 void Manipulator :: read_temperature()
 {
   vec_motors temperature;
+
+  {
+        std::lock_guard<std::mutex> lock(mtx_sincronizacion);
+        comando_actual_ = tarea_dynamixel:: READ_TEMPERATURE;
+        tarea_completada_ = false;
+  }
+  cv_iniciar_tarea_.notify_one();
   read_temp_arm(&arm,&var_m);
-  read_temp_claw(&var_m,portHandler,packetHandler);
+  //read_temp_claw(&var_m,portHandler,packetHandler);
+  {
+        std::unique_lock<std::mutex> lock(mtx_sincronizacion);
+        cv_tarea_terminada_.wait(lock, [this]{ return tarea_completada_; });
+  }
   fill(&var_m,temperature,'t');
   for (int i = 0; i < 8; i++)
   {
@@ -1074,8 +1107,21 @@ void Manipulator :: read_temperature()
 void Manipulator :: read_position()
 {
   vec_motors position;
+  
+  
+  {
+        std::lock_guard<std::mutex> lock(mtx_sincronizacion);
+        comando_actual_ = tarea_dynamixel:: READ_POSITION;
+        tarea_completada_ = false;
+  }
+  cv_iniciar_tarea_.notify_one();
+
   read_pos_arm(&arm,&var_m);
-  read_pos_claw(&var_m,portHandler,packetHandler);
+  //read_pos_claw(&var_m,portHandler,packetHandler);
+  {
+        std::unique_lock<std::mutex> lock(mtx_sincronizacion);
+        cv_tarea_terminada_.wait(lock, [this]{ return tarea_completada_; });
+  }
   fill(&var_m,position,'p');
   for (int i = 0; i < 8; i++)
   {
@@ -1090,8 +1136,18 @@ void Manipulator :: read_position()
 void Manipulator :: read_velocity()
 {
   vec_motors velocity;
+  {
+        std::lock_guard<std::mutex> lock(mtx_sincronizacion);
+        comando_actual_ = tarea_dynamixel:: READ_VELOCITY;
+        tarea_completada_ = false;
+  }
+  cv_iniciar_tarea_.notify_one();
   read_vel_arm(&arm,&var_m);
-  read_vel_claw(&var_m,portHandler,packetHandler);
+  //read_vel_claw(&var_m,portHandler,packetHandler);
+  {
+        std::unique_lock<std::mutex> lock(mtx_sincronizacion);
+        cv_tarea_terminada_.wait(lock, [this]{ return tarea_completada_; });
+  }
   fill(&var_m,velocity,'v');
   for (int i = 0; i < 8; i++)
   {
@@ -1106,11 +1162,90 @@ void Manipulator :: read_velocity()
 void Manipulator :: read_current()
 {
   vec_motors current;
+  {
+        std::lock_guard<std::mutex> lock(mtx_sincronizacion);
+        comando_actual_ = tarea_dynamixel:: READ_CURRENT;
+        tarea_completada_ = false;
+  }
+  cv_iniciar_tarea_.notify_one();
   read_current_arm(&arm,&var_m);
-  read_current_claw(&var_m,portHandler,packetHandler);
+  //read_current_claw(&var_m,portHandler,packetHandler);
+  {
+        std::unique_lock<std::mutex> lock(mtx_sincronizacion);
+        cv_tarea_terminada_.wait(lock, [this]{ return tarea_completada_; });
+  }
   fill(&var_m,current,'c');
   for (int i = 0; i < 8; i++)
   {
     printf("Motor %d Current: %f mA\n",i,current[i]);
   }
+}
+
+
+
+void Manipulator::gestor_tareas() {
+    while (true) {
+        std::unique_lock<std::mutex> lock(mtx_sincronizacion);
+        
+        // 1. DORMIR hasta que el comando sea distinto de 'SLEEPING'
+        cv_iniciar_tarea_.wait(lock, [this]{ 
+            return comando_actual_ != tarea_dynamixel::SLEEPING; 
+        });
+        
+        // Si se apagan los motores, rompemos el bucle infinito
+        if (comando_actual_ == tarea_dynamixel::POWER_OFF) break;
+
+        // 2. DESPERTAR Y TRABAJAR: Soltamos el candado para no bloquear
+        tarea_dynamixel tarea_a_ejecutar = comando_actual_;
+        lock.unlock(); 
+        
+        // --- LA MÁQUINA DE ESTADOS ---
+        switch (tarea_a_ejecutar) {
+            case tarea_dynamixel::READ_POSITION:
+                read_pos_claw(&var_m, portHandler, packetHandler);
+                break;
+            case tarea_dynamixel::READ_VELOCITY:
+                read_vel_claw(&var_m, portHandler, packetHandler);
+                break;
+            case tarea_dynamixel::READ_TEMPERATURE:
+                read_temp_claw(&var_m, portHandler, packetHandler);
+                break;
+            case tarea_dynamixel::READ_CURRENT:
+                read_current_claw(&var_m, portHandler, packetHandler);
+                break;
+            case tarea_dynamixel::SEND_VELOCITY:
+                set_velocity_claw();
+                break;
+            case tarea_dynamixel::SEND_POSITION:
+                set_position_claw();
+                break;
+            default:
+                break;
+        }
+        
+        // 3. AVISAR: Volvemos a coger el candado e informamos que terminamos
+        lock.lock();
+        comando_actual_ = tarea_dynamixel::SLEEPING; // Volvemos al estado base
+        tarea_completada_ = true;
+        cv_tarea_terminada_.notify_one();
+    }
+}
+
+
+/**
+ * @brief Master initialization function for the entire manipulator.
+ * Boots up the Rozum base arm motors first, followed by the Dynamixel claw motors.
+ */
+void Manipulator::init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler)
+{ 
+    init_motors_arm(arm,var_m); // Start position motors (Rozum)
+
+    init_claw_motors(portHandler,packetHandler); // Start orientation/claw motors (Dynamixel)
+
+    for (int i = 0; i < 8; i++)
+    {
+      max_pos[i] = 0;
+    }
+    hilo_dynamixel = std::thread(&Manipulator::gestor_tareas,this);
+    
 }

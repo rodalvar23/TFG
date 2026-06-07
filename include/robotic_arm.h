@@ -108,6 +108,7 @@ typedef struct
 #include "dynamixel_ros2.h"
 #include <string>
 #include <iostream>
+#include <condition_variable>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <thread>
@@ -123,15 +124,40 @@ typedef std::array <float,8> vec_motors;
 typedef std::array <int,5> result;
 typedef std::array  <uint8_t,5> ids_claw;
 
+enum class tarea_dynamixel{
+    SLEEPING,
+    SEND_VELOCITY,
+    SEND_POSITION,
+    READ_TEMPERATURE,
+    READ_VELOCITY,
+    READ_POSITION,
+    READ_CURRENT,
+    POWER_OFF
+};
+
+
 class Manipulator
 {   
+
+    private:
+    std::thread hilo_dynamixel;
+    std::mutex mtx_sincronizacion;
+    std::condition_variable cv_iniciar_tarea_;
+    std::condition_variable cv_tarea_terminada_;
+    
+    // Aquí guardamos la orden actual
+    tarea_dynamixel comando_actual_ = tarea_dynamixel::SLEEPING;
+    bool tarea_completada_ = false;
+
+    void gestor_tareas();
+
     //Variables publicas
     public:
         RoboArm arm;
         Var_motors var_m;
         dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler("/dev/u2d2_dyn"); // your dxl port name;
         dynamixel::PacketHandler *packetHandler  = dynamixel::PacketHandler::getPacketHandler(2.0); //protocol version;
-        vec_motors max_pos;
+        vec_motors max_pos,vel,pos;
         
         public:
         //Constructor
@@ -145,8 +171,10 @@ class Manipulator
         void init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler);
         void set_max_Velocity(vec_motors vel_max);
         void set_max_Position(vec_motors pos_max);
-        void set_Velocity_raw(vec_motors vel);
-        void set_Position_raw(vec_motors pos);
+        void set_velocity_claw();
+        void set_velocity_raw();
+        void set_position_claw();
+        void set_position_raw();
         void set_Mode(char mode);
         void getIDS(int ids[8]);
         void setIDS(int ids[8]);
