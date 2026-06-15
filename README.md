@@ -44,26 +44,56 @@ The primary controller class managing hardware handlers, initialization sequence
 
 ```cpp
 // Principal control and telemetry interface
-class Manipulator {
-public:
-    void init_motors(RoboArm *arm, Var_motors *var_m, dynamixel::PortHandler *portHandler, dynamixel::PacketHandler *packetHandler);
-    void set_Mode(char mode); // 'v' for Velocity, 'p' for Position
+class Manipulator
+{   
+
+    private:
+    std::thread hilo_dynamixel;
+    std::mutex mtx_sincronizacion;
+    std::condition_variable cv_iniciar_tarea_;
+    std::condition_variable cv_tarea_terminada_;
     
-    // Command Interfaces
-    void set_Velocity_raw(target_velocity vel);
-    void set_Position_raw(target_position pos);
-    void set_max_Velocity(max_velocity vel_max);
-    void set_max_Position(max_position pos_max);
-    
-    // Telemetry Interfaces
-    void read_position();
-    void read_velocity();
-    void read_temperature();
-    void read_current();
-    
-    // Configuration
-    void set_torque_state(bool state);
-    void get_torque_state();
-    void getIDS(uint8_t *ids[8]);
-    void setIDS(uint8_t ids[8]);
-};
+    // Aquí guardamos la orden actual
+    tarea_dynamixel comando_actual_ = tarea_dynamixel::SLEEPING;
+    bool tarea_completada_ = false;
+
+    void gestor_tareas();
+
+    //Variables publicas
+    public:
+        RoboArm arm;
+        Var_motors var_m;
+        dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler("/dev/u2d2_dyn"); // your dxl port name;
+        dynamixel::PacketHandler *packetHandler  = dynamixel::PacketHandler::getPacketHandler(2.0); //protocol version;
+        vec_motors max_pos,vel,pos;
+        
+        public:
+        //Constructor
+        Manipulator() = default;
+        //Destructor
+        ~Manipulator()
+        {
+            
+        }
+        //Funciones
+        void init_motors(RoboArm *arm,Var_motors *var_m,dynamixel::PortHandler *portHandler,dynamixel::PacketHandler *packetHandler);
+        void set_max_Velocity(vec_motors vel_max);
+        void set_max_Position(vec_motors pos_max);
+        void set_velocity_claw();
+        void set_velocity_raw();
+        void set_position_claw();
+        void set_position_raw();
+        void set_Mode(char mode);
+        void getIDS(int ids[8]);
+        void setIDS(int ids[8]);
+        void set_torque_state(bool state);
+        void get_torque_state();
+        void full_manual_mode();
+        void read_temperature();
+        void read_velocity();
+        void read_position();
+        void read_current();
+        void init();
+        void deinit();
+
+  };
